@@ -1,0 +1,728 @@
+<div class="section-stack pd">
+  <!-- Editorial header -->
+  <header class="page-header" appMotion>
+    <div>
+      <span class="page-icon"><app-icon name="sunrise" [size]="24" /></span>
+      <p class="eyebrow">Growth</p>
+      <h1>Your last <em class="accent">30 days</em></h1>
+      <p class="muted">A snapshot of your spiritual rhythm and daily examen progress.</p>
+    </div>
+    <div class="actions">
+      <span class="pill accent"><app-icon name="sparkle" [size]="14" />Insight mode</span>
+      <button class="btn btn-soft" type="button" (click)="downloadReport()" [disabled]="isDemo" [attr.title]="isDemo ? 'PDF export requires the self-hosted app. Export demo JSON from Settings.' : null">
+        <app-icon name="download" [size]="16" />{{ isDemo ? 'PDF · self-hosted only' : 'Export PDF' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Anchored sub-navigation -->
+  <nav class="pd-nav" aria-label="Growth sections">
+    <a *ngFor="let s of navSections" [href]="'#' + s.id" (click)="jumpTo($event, s.id)">
+      <app-icon [name]="s.icon" [size]="15" />{{ s.label }}
+    </a>
+  </nav>
+
+  <div class="loading-state" *ngIf="loading">Loading your summary...</div>
+
+  <!-- Overview: candlelit hero + KPI tiles -->
+  <section id="pd-overview" class="pd-section section-stack" *ngIf="summary">
+    <div class="card card-night hero fade-up">
+      <div class="hero-score">
+        <svg class="ring ring-lg" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="52" />
+          <circle class="ring-fill" cx="60" cy="60" r="52" pathLength="100"
+            [attr.stroke-dasharray]="clampPct(summary.spiritualProgressScore) + ' 100'" />
+        </svg>
+        <div class="ring-center">
+          <span class="display hero-num num">
+            {{ summary.spiritualProgressScore != null ? (summary.spiritualProgressScore | number:'1.0-0') + '%' : '-' }}
+          </span>
+          <span class="tiny muted">Spiritual progress</span>
+          <span class="tiny muted hero-note">Consistency, feeling, and categories</span>
+        </div>
+      </div>
+
+      <div class="hero-body">
+        <p class="eyebrow">Today</p>
+        <h2 class="serif">{{ summary.todayCompleted ? 'Completed' : 'Not completed yet' }}</h2>
+        <p class="muted small">
+          {{ summary.todayMood ? ('Feeling ' + summary.todayMood + '/5') : 'No feeling logged yet' }}
+        </p>
+
+        <div class="hero-minis">
+          <div class="mini">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-track" cx="60" cy="60" r="50" />
+              <circle class="ring-fill m-request" cx="60" cy="60" r="50" pathLength="100"
+                [attr.stroke-dasharray]="pct5(summary.averageMoodLast30Days) + ' 100'" />
+            </svg>
+            <div>
+              <div class="mini-val num">
+                {{ summary.averageMoodLast30Days != null ? (summary.averageMoodLast30Days | number:'1.1-1') : '-' }}<small>/5</small>
+              </div>
+              <div class="tiny muted">Avg feeling (30d)</div>
+            </div>
+          </div>
+          <div class="mini">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-track" cx="60" cy="60" r="50" />
+              <circle class="ring-fill m-resolve" cx="60" cy="60" r="50" pathLength="100"
+                [attr.stroke-dasharray]="clampPct(((summary.sessionsThisWeek || 0) / 7) * 100) + ' 100'" />
+            </svg>
+            <div>
+              <div class="mini-val num">{{ summary.sessionsThisWeek || 0 }}<small>/7</small></div>
+              <div class="tiny muted">Sessions this week</div>
+            </div>
+          </div>
+          <div class="mini">
+            <span class="flame"><app-icon name="flame" [size]="26" /></span>
+            <div>
+              <div class="mini-val num">{{ summary.streakDays }} days</div>
+              <div class="tiny muted">Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row hero-actions">
+          <span class="pill">{{ summary.sessionsThisWeek || 0 }} this week</span>
+          <button class="btn btn-primary" routerLink="/examination">
+            <app-icon name="flame" [size]="16" />Start today
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="card kpi card-interactive" appMotion>
+        <span class="card-glyph m-review" style="--glyph: var(--m-review)"><app-icon name="check-circle" [size]="20" /></span>
+        <div class="stat">
+          <span class="stat-label">Examinations completed</span>
+          <span class="stat-value">{{ summary.examinationsCompleted }}</span>
+          <span class="tiny muted">Consistent reflection builds clarity.</span>
+        </div>
+      </div>
+      <div class="card kpi card-interactive" appMotion>
+        <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="checklist" [size]="20" /></span>
+        <div class="stat">
+          <span class="stat-label">Todos completed</span>
+          <span class="stat-value">{{ summary.todosCompleted }}</span>
+          <span class="tiny muted">Checked-off tasks in the last month.</span>
+        </div>
+      </div>
+      <div class="card kpi card-interactive" appMotion>
+        <span class="card-glyph" style="--glyph: var(--m-request)"><app-icon name="layers" [size]="20" /></span>
+        <div class="stat">
+          <span class="stat-label">Categories used</span>
+          <span class="stat-value">{{ summary.categoriesUsed }}</span>
+          <span class="tiny muted">Active themes keeping you organized.</span>
+        </div>
+      </div>
+      <div class="card kpi card-interactive" appMotion>
+        <span class="card-glyph" style="--glyph: var(--m-relish)"><app-icon name="calendar" [size]="20" /></span>
+        <div class="stat">
+          <span class="stat-label">Sessions this month</span>
+          <span class="stat-value">{{ summary.sessionsThisMonth || 0 }}</span>
+          <span class="tiny muted">Evenings given to the examen.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="empty-state" *ngIf="!loading && !summary">
+    <app-icon name="sunrise" [size]="30" />
+    <strong>No summary yet</strong>
+    Complete an examination session to see your metrics.
+  </div>
+
+  <!-- Rhythm: trends and period summaries -->
+  <section id="pd-rhythm" class="pd-section"
+    *ngIf="summary?.recentMoodTrend?.length || progress.length || analytics?.weeklyTrend?.length || weekly || monthly">
+    <p class="divider-ornament">Rhythm</p>
+    <div class="pd-grid">
+      <div class="card" *ngIf="summary?.recentMoodTrend?.length" appMotion>
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph" style="--glyph: var(--m-request)"><app-icon name="smile" [size]="20" /></span>
+            <div>
+              <p class="overline">Feeling trend (last 14 days)</p>
+              <h3>How your evenings felt</h3>
+            </div>
+          </div>
+        </div>
+        <ng-container *ngIf="moodChart as c">
+          <svg class="spark" viewBox="0 0 300 90" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="pd-mood-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" class="stop-a" />
+                <stop offset="1" class="stop-b" />
+              </linearGradient>
+            </defs>
+            <line class="grid" x1="0" x2="300" y1="45" y2="45" />
+            <path class="area" [attr.d]="c.area" fill="url(#pd-mood-grad)" />
+            <path class="line" [attr.d]="c.line" vector-effect="non-scaling-stroke" />
+          </svg>
+        </ng-container>
+        <div class="axis tiny muted">
+          <span>{{ summary?.recentMoodTrend?.[0]?.date | date:'MMM d' }}</span>
+          <span>{{ summary?.recentMoodTrend?.[(summary?.recentMoodTrend?.length || 1) - 1]?.date | date:'MMM d' }}</span>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="progress.length" appMotion>
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="calendar" [size]="20" /></span>
+            <div>
+              <p class="overline">Completion trend (14 days)</p>
+              <h3>Evenings kept</h3>
+            </div>
+          </div>
+        </div>
+        <div class="heat" role="list">
+          <span class="cell" role="listitem" *ngFor="let point of progress"
+            [class.on]="point.completed"
+            [style.--lv]="point.mood || (point.completed ? 3 : 0)"
+            [attr.aria-label]="(point.date | date:'MMM d') + (point.completed ? ': completed' : ': missed')"
+            [title]="(point.date | date:'MMM d') + (point.mood ? ' · feeling ' + point.mood + '/5' : '')"></span>
+        </div>
+        <div class="axis tiny muted">
+          <span>{{ progress[0].date | date:'MMM d' }}</span>
+          <span class="row legend"><i class="cell"></i>missed <i class="cell on"></i>kept</span>
+          <span>{{ progress[progress.length - 1].date | date:'MMM d' }}</span>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="analytics?.weeklyTrend?.length" appMotion>
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="chart" [size]="20" /></span>
+            <div>
+              <p class="overline">Weekly trend</p>
+              <h3>Sessions per week</h3>
+            </div>
+          </div>
+        </div>
+        <div class="bars">
+          <div class="bar-col" *ngFor="let w of analytics?.weeklyTrend || []">
+            <span class="tiny num">{{ w.sessions || 0 }}</span>
+            <div class="bar-track-v"><span [style.height.%]="((w.sessions || 0) / maxWeeklySessions) * 100"></span></div>
+            <span class="tiny muted">{{ w.weekStart | date:'MM/dd' }}</span>
+            <span class="tiny muted">Feeling {{ w.averageMood != null ? (w.averageMood | number:'1.1-1') : '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="weekly || monthly" appMotion>
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph"><app-icon name="hourglass" [size]="20" /></span>
+            <div>
+              <p class="overline">Period summaries</p>
+              <h3>Week and month</h3>
+            </div>
+          </div>
+        </div>
+        <div class="period-grid">
+          <div class="card card-flat" *ngIf="weekly">
+            <div class="stat">
+              <span class="stat-label">This week</span>
+              <span class="stat-value">{{ weekly.sessions }}</span>
+            </div>
+            <p class="tiny muted">Sessions - {{ weekly.completedDays }} days</p>
+            <p class="tiny muted">Avg feeling: {{ weekly.averageMood != null ? (weekly.averageMood | number:'1.1-1') : '-' }}</p>
+          </div>
+          <div class="card card-flat" *ngIf="monthly">
+            <div class="stat">
+              <span class="stat-label">This month</span>
+              <span class="stat-value">{{ monthly.sessions }}</span>
+            </div>
+            <p class="tiny muted">Sessions - {{ monthly.completedDays }} days</p>
+            <p class="tiny muted">Avg feeling: {{ monthly.averageMood != null ? (monthly.averageMood | number:'1.1-1') : '-' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scoring: advanced analytics, anomalies, categories -->
+  <section id="pd-scoring" class="pd-section section-stack" *ngIf="analytics">
+    <p class="divider-ornament">Scoring</p>
+    <div class="card" appMotion>
+      <div class="card-header wrap">
+        <div class="card-title">
+          <span class="card-glyph"><app-icon name="target" [size]="20" /></span>
+          <div>
+            <p class="overline">Advanced Analytics & Scoring</p>
+            <h2>Spiritual Well-Being & Momentum</h2>
+          </div>
+        </div>
+        <div class="chip-row" *ngIf="analytics.qualityMetrics">
+          <span class="tag" [ngClass]="getDriftClass(analytics.qualityMetrics.sentimentDriftIndicator)">
+            <app-icon name="trend-up" [size]="13" />{{ analytics.qualityMetrics.sentimentDriftIndicator }}
+          </span>
+          <span class="tag tag-muted">AI Quality: {{ (analytics.qualityMetrics.feedbackSatisfactionRate * 100) | number:'1.0-0' }}% helpful</span>
+        </div>
+      </div>
+      <p class="muted small" *ngIf="analytics.advancedScore">{{ analytics.advancedScore.scoringRationale }}</p>
+
+      <div class="anomalies" *ngIf="analytics.anomalies && analytics.anomalies.length">
+        <div class="anomaly" *ngFor="let anomaly of analytics.anomalies" [ngClass]="getAnomalySeverityClass(anomaly.severity)">
+          <app-icon name="alert" [size]="18" />
+          <div>
+            <div class="row wrap">
+              <span class="tag">{{ anomaly.type }}</span>
+              <strong>{{ anomaly.title }}</strong>
+              <span class="tiny muted" *ngIf="anomaly.detectedDate">{{ anomaly.detectedDate | date:'mediumDate' }}</span>
+            </div>
+            <p class="small">{{ anomaly.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-grid" *ngIf="analytics.advancedScore as a">
+        <div class="card card-flat gauge-card">
+          <svg class="gauge" viewBox="0 0 120 70" aria-hidden="true">
+            <path class="ring-track" d="M10 62 A50 50 0 0 1 110 62" />
+            <path class="gauge-ci" d="M10 62 A50 50 0 0 1 110 62" pathLength="100"
+              [attr.stroke-dasharray]="'0 ' + clampPct(a.confidenceLower) + ' ' + (clampPct(a.confidenceUpper) - clampPct(a.confidenceLower)) + ' 100'" />
+            <path class="ring-fill" d="M10 62 A50 50 0 0 1 110 62" pathLength="100"
+              [attr.stroke-dasharray]="clampPct(a.compositeScore) + ' 100'" />
+          </svg>
+          <div class="gauge-val">
+            <span class="display hero-num num">{{ a.compositeScore | number:'1.0-0' }}%</span>
+            <span class="tiny muted">Composite spiritual score</span>
+          </div>
+          <div class="chip-row center">
+            <span class="tag tag-accent">95% CI: [{{ a.confidenceLower | number:'1.0-0' }}% – {{ a.confidenceUpper | number:'1.0-0' }}%]</span>
+            <span class="tag tag-muted">±{{ a.marginOfError | number:'1.1-1' }}%</span>
+          </div>
+          <p class="tiny muted">Based on {{ a.sampleSize }} data points analyzed.</p>
+        </div>
+
+        <div class="factors">
+          <p class="overline">Score Factors</p>
+          <div class="factor m-resolve">
+            <div class="row"><app-icon name="calendar" [size]="15" /><span>Consistency rhythm (30%)</span><span class="spacer"></span><strong class="num">{{ a.consistencyScore | number:'1.0-0' }}%</strong></div>
+            <div class="meter"><span [style.width.%]="a.consistencyScore"></span></div>
+          </div>
+          <div class="factor m-request">
+            <div class="row"><app-icon name="smile" [size]="15" /><span>Feeling stability (30%)</span><span class="spacer"></span><strong class="num">{{ a.moodStabilityScore | number:'1.0-0' }}%</strong></div>
+            <div class="meter"><span [style.width.%]="a.moodStabilityScore"></span></div>
+          </div>
+          <div class="factor m-repent">
+            <div class="row"><app-icon name="scale" [size]="15" /><span>Virtue / struggle balance (20%)</span><span class="spacer"></span><strong class="num">{{ a.virtueStruggleRatio | number:'1.0-0' }}%</strong></div>
+            <div class="meter"><span [style.width.%]="a.virtueStruggleRatio"></span></div>
+          </div>
+          <div class="factor m-relish">
+            <div class="row"><app-icon name="target" [size]="15" /><span>Goal & habit execution (20%)</span><span class="spacer"></span><strong class="num">{{ a.goalExecutionScore | number:'1.0-0' }}%</strong></div>
+            <div class="meter"><span [style.width.%]="a.goalExecutionScore"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid baseline">
+        <div class="stat">
+          <span class="stat-label">Overall feeling score</span>
+          <span class="stat-value">{{ analytics.overallAverageScore != null ? (analytics.overallAverageScore | number:'1.0-0') + '%' : '-' }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Average feeling</span>
+          <span class="stat-value">{{ analytics.overallMood != null ? (analytics.overallMood | number:'1.1-1') : '-' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="(analytics.categories || []).length" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="layers" [size]="20" /></span>
+          <div>
+            <p class="overline">Category breakdown</p>
+            <h3>Feeling by theme</h3>
+          </div>
+        </div>
+      </div>
+      <div class="cat-list">
+        <div class="cat-row" *ngFor="let c of analytics.categories || []">
+          <div>
+            <div class="cat-name">{{ c.categoryName }}</div>
+            <div class="tiny muted">{{ c.answers }} answers</div>
+          </div>
+          <div class="meter m-review"><span [style.width.%]="c.averageScore || 0"></span></div>
+          <div class="tiny muted num">
+            Feeling score: {{ c.averageScore != null ? (c.averageScore | number:'1.0-0') + '%' : '-' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Practices: gratitude, habits, weekly summary -->
+  <section id="pd-practices" class="pd-section">
+    <p class="divider-ornament">Practices</p>
+    <div class="card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="sprout" [size]="20" /></span>
+          <div>
+            <p class="overline">Growth</p>
+            <h2>Weekly practices</h2>
+            <p class="muted small">Gratitude, habits, and weekly summaries in one place.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading-state" *ngIf="growthLoading">Loading growth data...</div>
+      <div class="alert error" *ngIf="growthError"><app-icon name="alert" [size]="18" />{{ growthError }}</div>
+
+      <div class="section-stack" *ngIf="!growthLoading">
+        <div class="week-strip">
+          <div class="stat"><span class="stat-label">Sessions</span><span class="stat-value">{{ weeklyGrowth?.sessionsCompleted || 0 }}</span></div>
+          <div class="stat"><span class="stat-label">Todos</span><span class="stat-value">{{ weeklyGrowth?.todosCompleted || 0 }}</span></div>
+          <div class="stat"><span class="stat-label">Habits scored</span><span class="stat-value">{{ weeklyGrowth?.habitsScored || 0 }}</span></div>
+          <div class="stat">
+            <span class="stat-label">Avg habit score</span>
+            <span class="stat-value">{{ weeklyGrowth?.averageHabitScore != null ? (weeklyGrowth?.averageHabitScore | number:'1.1-1') : '-' }}</span>
+          </div>
+          <div class="stat"><span class="stat-label">Gratitude</span><span class="stat-value">{{ weeklyGrowth?.gratitudeCount || 0 }}</span></div>
+        </div>
+
+        <div class="pd-grid three">
+          <div class="card card-flat panel m-relish">
+            <p class="overline"><app-icon name="heart" [size]="14" />Gratitude</p>
+            <div class="inline-form">
+              <input type="text" [(ngModel)]="gratitudeDraft" placeholder="Add a gratitude note" />
+              <button class="btn btn-primary" type="button" (click)="addGratitude()"><app-icon name="plus" [size]="16" />Add</button>
+            </div>
+            <ul class="list-reset entries" *ngIf="gratitudePreview.length">
+              <li *ngFor="let entry of gratitudePreview">
+                <span class="serif">{{ entry.content }}</span>
+                <span class="tiny muted">{{ entry.createdAt | date:'medium' }}</span>
+              </li>
+            </ul>
+            <div class="empty-state compact" *ngIf="!gratitudePreview.length">No gratitude entries yet.</div>
+          </div>
+
+          <div class="card card-flat panel m-resolve">
+            <p class="overline"><app-icon name="sprout" [size]="14" />Habit score</p>
+            <div class="inline-form">
+              <input type="text" [(ngModel)]="habitDraft" placeholder="Habit name" />
+              <select [(ngModel)]="habitScore" aria-label="Habit score">
+                <option *ngFor="let score of habitScale" [ngValue]="score">{{ score }}</option>
+              </select>
+              <button class="btn btn-primary" type="button" (click)="addHabitScore()">Save</button>
+            </div>
+            <ul class="list-reset entries" *ngIf="habitPreview.length">
+              <li *ngFor="let entry of habitPreview">
+                <span class="row"><span>{{ entry.habit }} - {{ entry.score }}/5</span><span class="spacer"></span>
+                  <span class="pips" aria-hidden="true"><i *ngFor="let n of habitScale" [class.on]="n <= entry.score"></i></span>
+                </span>
+                <span class="tiny muted">{{ entry.scoreDate | date:'mediumDate' }}</span>
+              </li>
+            </ul>
+            <div class="empty-state compact" *ngIf="!habitPreview.length">No habit scores yet.</div>
+          </div>
+
+          <div class="card card-flat panel m-review">
+            <p class="overline"><app-icon name="candle" [size]="14" />Meditation suggestions</p>
+            <ul class="list-reset entries" *ngIf="suggestions.length">
+              <li *ngFor="let s of suggestions" class="serif">{{ s }}</li>
+            </ul>
+            <div class="empty-state compact" *ngIf="!suggestions.length">No suggestions available.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Insights: AI summary, prompts, narrative, themes -->
+  <section id="pd-insights" class="pd-section section-stack">
+    <p class="divider-ornament">Discernment</p>
+
+    <div class="card insight-card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph"><app-icon name="sparkle" [size]="20" /></span>
+          <div>
+            <p class="eyebrow">AI insights</p>
+            <h2>Summary and suggested prompts</h2>
+            <p class="muted small">Latest analysis from your recent sessions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert error" *ngIf="insightsError"><app-icon name="alert" [size]="18" />{{ insightsError }}</div>
+
+      <div *ngIf="insightsSummary" class="section-stack">
+        <div class="chip-row" *ngIf="insightsSummary.confidenceScore != null">
+          <span class="tag" [ngClass]="getConfidenceClass(insightsSummary.confidenceScore)">
+            {{ getConfidenceLabel(insightsSummary.confidenceScore) }} ({{ (insightsSummary.confidenceScore * 100) | number:'1.0-0' }}%)
+          </span>
+          <span class="tiny muted">Based on {{ insightsSummary.sessionsCompleted }} sessions over {{ insightsSummary.periodDays }} days</span>
+        </div>
+
+        <blockquote class="note">
+          <app-icon name="quote" [size]="22" />
+          <p>{{ insightsSummary.summary }}</p>
+        </blockquote>
+        <ul class="list-reset marks" *ngIf="insightsSummary.highlights.length">
+          <li *ngFor="let item of insightsSummary.highlights"><app-icon name="star" [size]="14" />{{ item }}</li>
+        </ul>
+
+        <div *ngIf="insightsSummary.evidenceSnippets?.length">
+          <button class="btn btn-text btn-sm" type="button" (click)="toggleEvidence()" [attr.aria-expanded]="showEvidence">
+            <app-icon [name]="showEvidence ? 'chevron-down' : 'chevron-right'" [size]="15" />
+            {{ showEvidence ? 'Hide grounding evidence' : 'View grounding evidence (' + (insightsSummary.evidenceSnippets?.length || 0) + ' citations)' }}
+          </button>
+          <div class="evidence" *ngIf="showEvidence">
+            <div class="card card-flat" *ngFor="let ev of insightsSummary.evidenceSnippets">
+              <div class="row">
+                <span class="tag tag-accent">{{ ev.source }}</span>
+                <span class="tiny muted" *ngIf="ev.date">{{ ev.date | date:'mediumDate' }}</span>
+              </div>
+              <p class="serif quote">“{{ ev.snippet }}”</p>
+              <p class="tiny muted" *ngIf="ev.rationale"><strong>Rationale:</strong> {{ ev.rationale }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feedback">
+          <span class="tiny muted">Is this summary accurate?</span>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="rateProfileSummary(true)"><app-icon name="thumb-up" [size]="14" />Accurate</button>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="rateProfileSummary(false)"><app-icon name="thumb-down" [size]="14" />Inaccurate</button>
+          <span class="tiny status" *ngIf="feedbackStatus['summary']">{{ feedbackStatus['summary'] }}</span>
+        </div>
+      </div>
+
+      <div class="prompt-box">
+        <p class="overline"><app-icon name="quill" [size]="14" />Questions to carry into prayer</p>
+        <div class="inline-form">
+          <div class="input-icon">
+            <app-icon name="search" [size]="16" />
+            <input type="text" [(ngModel)]="suggestionFocus" placeholder="Focus area (gratitude, prayer, relationships...)" />
+          </div>
+          <button class="btn btn-primary" type="button" (click)="refreshQuestionSuggestions()">
+            <app-icon name="refresh" [size]="16" />Refresh suggestions
+          </button>
+        </div>
+
+        <div *ngIf="suggestedQuestions.length">
+          <ol class="questions">
+            <li *ngFor="let question of suggestedQuestions" class="serif">{{ question }}</li>
+          </ol>
+          <div class="feedback">
+            <span class="tiny muted">Are these prompts relevant?</span>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="rateQuestionSuggestions(true)"><app-icon name="thumb-up" [size]="14" />Yes</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="rateQuestionSuggestions(false)"><app-icon name="thumb-down" [size]="14" />No</button>
+            <span class="tiny status" *ngIf="feedbackStatus['suggestions']">{{ feedbackStatus['suggestions'] }}</span>
+          </div>
+        </div>
+        <div class="empty-state compact" *ngIf="!suggestedQuestions.length">No suggestions available right now.</div>
+      </div>
+
+      <div class="followups" *ngIf="followUpPrompts.length || followUpsLoading">
+        <div class="card-header wrap">
+          <div>
+            <p class="overline">Personalized Guidance</p>
+            <h3>Adaptive Follow-Up Prompts</h3>
+            <p class="tiny muted">Synthesized from your recent reflections, active goals, and recurring themes.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="loadFollowUpPrompts()" [disabled]="followUpsLoading">
+            <app-icon name="refresh" [size]="14" />{{ followUpsLoading ? 'Refreshing...' : 'Refresh follow-ups' }}
+          </button>
+        </div>
+        <div class="pd-grid" *ngIf="!followUpsLoading && followUpPrompts.length">
+          <div class="card card-flat card-interactive fu" *ngFor="let fp of followUpPrompts">
+            <div class="chip-row">
+              <span class="tag tag-accent" [ngClass]="fp.sourceContext.toLowerCase()">{{ fp.sourceContext }}</span>
+              <span class="tiny muted" *ngIf="fp.targetFocus">{{ fp.targetFocus }}</span>
+            </div>
+            <p class="serif fu-q">{{ fp.question }}</p>
+            <p class="tiny muted"><strong>Why this prompt:</strong> {{ fp.rationale }}</p>
+          </div>
+        </div>
+        <div class="loading-state" *ngIf="followUpsLoading">Synthesizing follow-up prompts...</div>
+      </div>
+
+      <div class="card card-flat session-insight" *ngIf="sessionInsight">
+        <p class="overline"><app-icon name="eye" [size]="14" />Latest session insight</p>
+        <p class="serif">{{ sessionInsight.summary }}</p>
+        <ul class="list-reset marks" *ngIf="sessionInsight.nextSteps.length">
+          <li *ngFor="let step of sessionInsight.nextSteps"><app-icon name="arrow-right" [size]="14" />{{ step }}</li>
+        </ul>
+        <div class="feedback">
+          <span class="tiny muted">Was this insight helpful?</span>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="rateSessionInsight(true)"><app-icon name="thumb-up" [size]="14" />Helpful</button>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="rateSessionInsight(false)"><app-icon name="thumb-down" [size]="14" />Not helpful</button>
+          <span class="tiny status" *ngIf="feedbackStatus['sessionInsight']">{{ feedbackStatus['sessionInsight'] }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly narrative synthesis -->
+    <div class="card card-night narrative" appMotion *ngIf="weeklyNarrativeLoading || weeklyNarrative || weeklyNarrativeError">
+      <div class="card-header wrap">
+        <div>
+          <p class="eyebrow">Weekly reflection synthesis</p>
+          <h2>{{ weeklyNarrative?.title || 'Weekly Narrative Report' }}</h2>
+          <p class="muted small" *ngIf="weeklyNarrative">
+            Period: {{ weeklyNarrative.periodStart | date:'MMM d' }} – {{ weeklyNarrative.periodEnd | date:'MMM d, yyyy' }}
+            · {{ weeklyNarrative.sessionsAnalyzed }} sessions analyzed
+            <span *ngIf="weeklyNarrative.averageFeeling != null"> · Avg feeling: {{ weeklyNarrative.averageFeeling | number:'1.1-1' }}/5</span>
+          </p>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="loadWeeklyNarrative()" [disabled]="weeklyNarrativeLoading">
+          <app-icon name="refresh" [size]="14" />{{ weeklyNarrativeLoading ? 'Synthesizing...' : 'Refresh narrative' }}
+        </button>
+      </div>
+
+      <div class="loading-state" *ngIf="weeklyNarrativeLoading">Synthesizing weekly reflection report...</div>
+      <div class="alert error" *ngIf="weeklyNarrativeError">{{ weeklyNarrativeError }}</div>
+
+      <div class="section-stack" *ngIf="weeklyNarrative && !weeklyNarrativeLoading">
+        <blockquote class="note">
+          <app-icon name="quote" [size]="22" />
+          <p>{{ weeklyNarrative.narrative }}</p>
+        </blockquote>
+
+        <div class="pd-grid">
+          <div class="theme m-resolve" *ngIf="weeklyNarrative.virtuesObserved.length">
+            <span class="theme-h"><app-icon name="sprout" [size]="15" />Observed Virtues</span>
+            <div class="chip-row"><span class="chip" *ngFor="let v of weeklyNarrative.virtuesObserved">{{ v }}</span></div>
+          </div>
+          <div class="theme m-repent" *ngIf="weeklyNarrative.strugglesIdentified.length">
+            <span class="theme-h"><app-icon name="droplet" [size]="15" />Areas of Struggle</span>
+            <div class="chip-row"><span class="chip" *ngFor="let s of weeklyNarrative.strugglesIdentified">{{ s }}</span></div>
+          </div>
+          <div class="theme m-relish" *ngIf="weeklyNarrative.gratitudeThemes.length">
+            <span class="theme-h"><app-icon name="heart" [size]="15" />Gratitude Highlights</span>
+            <div class="chip-row"><span class="chip" *ngFor="let g of weeklyNarrative.gratitudeThemes">{{ g }}</span></div>
+          </div>
+          <div class="theme m-request" *ngIf="weeklyNarrative.stressorSignals.length">
+            <span class="theme-h"><app-icon name="pulse" [size]="15" />Stressor Signals</span>
+            <div class="chip-row"><span class="chip" *ngFor="let st of weeklyNarrative.stressorSignals">{{ st }}</span></div>
+          </div>
+        </div>
+
+        <div *ngIf="weeklyNarrative.actionableAdvice.length">
+          <p class="overline">Guidance for the week ahead</p>
+          <ul class="list-reset marks">
+            <li *ngFor="let advice of weeklyNarrative.actionableAdvice"><app-icon name="sunrise" [size]="14" />{{ advice }}</li>
+          </ul>
+        </div>
+
+        <div class="feedback">
+          <span class="small muted">Was this weekly narrative helpful?</span>
+          <button class="btn btn-ghost btn-sm" type="button" [class.btn-soft]="weeklyNarrativeFeedback === 'helpful'"
+            [attr.aria-pressed]="weeklyNarrativeFeedback === 'helpful'" (click)="rateWeeklyNarrative(true)" title="Helpful">
+            <app-icon name="thumb-up" [size]="14" />Helpful
+          </button>
+          <button class="btn btn-ghost btn-sm" type="button" [class.btn-soft]="weeklyNarrativeFeedback === 'not-helpful'"
+            [attr.aria-pressed]="weeklyNarrativeFeedback === 'not-helpful'" (click)="rateWeeklyNarrative(false)" title="Not helpful">
+            <app-icon name="thumb-down" [size]="14" />Not helpful
+          </button>
+          <span class="tiny status" *ngIf="feedbackStatus['narrative']">{{ feedbackStatus['narrative'] }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semantic reflection themes -->
+    <div class="card" appMotion *ngIf="semanticTagSummary && semanticTagSummary.totalTags > 0">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="hash" [size]="20" /></span>
+          <div>
+            <p class="overline">Semantic reflection themes</p>
+            <h2>Reflection Patterns (Last {{ semanticTagSummary.periodDays }} Days)</h2>
+            <p class="muted small">{{ semanticTagSummary.totalTags }} semantic themes detected across your examinations.</p>
+          </div>
+        </div>
+      </div>
+      <div class="pd-grid">
+        <ng-container *ngFor="let group of [
+          { key: 'VIRTUE', items: semanticTagSummary.virtues },
+          { key: 'STRUGGLE', items: semanticTagSummary.struggles },
+          { key: 'GRATITUDE', items: semanticTagSummary.gratitude },
+          { key: 'STRESSOR', items: semanticTagSummary.stressors }
+        ]">
+          <div class="theme" [ngClass]="themeMeta[group.key].cls" *ngIf="group.items.length">
+            <span class="theme-h"><app-icon [name]="themeMeta[group.key].icon" [size]="15" />{{ themeMeta[group.key].label }}</span>
+            <div class="chip-row">
+              <span class="chip" *ngFor="let item of group.items">{{ item.tag }} <b class="num">{{ item.count }}</b></span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+
+  <!-- Inbox -->
+  <section id="pd-inbox" class="pd-section">
+    <div class="card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-request)"><app-icon name="bell" [size]="20" /></span>
+          <div>
+            <p class="overline">Notifications</p>
+            <h2>Reminder inbox</h2>
+          </div>
+        </div>
+      </div>
+      <div class="loading-state" *ngIf="notificationsLoading">Loading notifications...</div>
+      <div class="alert error" *ngIf="notificationsError">{{ notificationsError }}</div>
+      <ul class="list-reset inbox" *ngIf="!notificationsLoading && notifications.length">
+        <li *ngFor="let n of notifications" [class.unread]="!n.readAt">
+          <span class="dot-state" aria-hidden="true"></span>
+          <div class="inbox-body">
+            <strong>{{ n.title }}</strong>
+            <span class="tiny muted">{{ n.message }}</span>
+          </div>
+          <div class="row wrap">
+            <span class="tiny muted">{{ n.createdAt | date:'medium' }}</span>
+            <button class="btn btn-soft btn-sm" type="button" *ngIf="!n.readAt" (click)="markNotificationRead(n)">
+              <app-icon name="check" [size]="14" />Mark read
+            </button>
+            <span class="tag tag-success" *ngIf="n.readAt"><app-icon name="check" [size]="13" />Read</span>
+          </div>
+        </li>
+      </ul>
+      <div class="empty-state compact" *ngIf="!notificationsLoading && !notifications.length">
+        <app-icon name="bell" [size]="24" />
+        No notifications yet.
+      </div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section id="pd-history" class="pd-section" *ngIf="sessions.length">
+    <div class="card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="history" [size]="20" /></span>
+          <div>
+            <p class="overline">Recent sessions</p>
+            <h3>Your last examens</h3>
+          </div>
+        </div>
+      </div>
+      <ul class="list-reset sessions">
+        <li *ngFor="let s of sessions">
+          <svg class="ring ring-sm" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="48" />
+            <circle class="ring-fill" cx="60" cy="60" r="48" pathLength="100" [attr.stroke-dasharray]="clampPct(s.score) + ' 100'" />
+          </svg>
+          <div class="grow">
+            <div class="serif">{{ s.completedAt || s.startedAt | date:'medium' }}</div>
+            <div class="muted small" *ngIf="s.notes">{{ s.notes }}</div>
+            <div class="chip-row" *ngIf="sessionTags[s.id]?.length">
+              <span *ngFor="let t of sessionTags[s.id]" class="chip sm" [ngClass]="themeMeta[t.category]?.cls || ''">{{ t.tag }}</span>
+            </div>
+          </div>
+          <span class="tag" [ngClass]="s.score ? 'tag-success' : 'tag-muted'">
+            {{ s.score ? (s.score | number:'1.0-0') + '%' : 'No score' }}
+          </span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>

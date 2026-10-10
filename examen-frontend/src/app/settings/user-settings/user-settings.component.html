@@ -1,0 +1,218 @@
+<div class="section-stack fade-up" *ngIf="settings">
+  <div class="page-header" appMotion>
+    <div>
+      <span class="page-icon"><app-icon name="sliders" [size]="24" /></span>
+      <p class="eyebrow">Settings</p>
+      <h1>Your <em class="accent">preferences</em></h1>
+      <p class="muted">Time zone, reminders, theme, and your data &mdash; shaped around your evening rhythm.</p>
+    </div>
+  </div>
+
+  <div class="settings-layout">
+    <nav class="settings-nav card card-flat" aria-label="Settings sections">
+      <button type="button" (click)="jumpTo('reminders-heading')"><app-icon name="bell" [size]="17" /> Reminders</button>
+      <button type="button" (click)="jumpTo('appearance-heading')"><app-icon name="moon-stars" [size]="17" /> Appearance</button>
+      <button type="button" (click)="jumpTo('data-heading')"><app-icon name="shield" [size]="17" /> Privacy &amp; data</button>
+      <button type="button" class="danger-link" (click)="jumpTo('danger-heading')"><app-icon name="trash" [size]="17" /> Danger zone</button>
+    </nav>
+
+    <div class="section-stack">
+      <form class="section-stack" (ngSubmit)="save()">
+        <!-- Reminders -->
+        <section class="card" appMotion aria-labelledby="reminders-heading">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-glyph" style="--glyph: var(--m-relish)"><app-icon name="bell" [size]="20" /></span>
+              <div>
+                <h2 id="reminders-heading" class="section-title">Reminders</h2>
+                <p class="muted small">A gentle nudge at your reminder time, in the time zone below.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="tz">Time zone</label>
+              <div class="input-icon">
+                <app-icon name="globe" [size]="18" />
+                <select id="tz" name="timeZone" [(ngModel)]="settings.timeZone">
+                  <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="reminder">Reminder time</label>
+              <div class="input-icon">
+                <app-icon name="clock" [size]="18" />
+                <input id="reminder" name="reminderTime" type="time" [(ngModel)]="settings.reminderTime" />
+              </div>
+            </div>
+          </div>
+
+          <div class="switch-list">
+            <div class="switch-row">
+              <span class="switch-icon"><app-icon name="mail" [size]="18" /></span>
+              <div class="switch-text">
+                <label for="emailReminder">Email reminders</label>
+                <p class="muted tiny" id="emailReminder-hint">{{ isDemo ? 'Email reminders are unavailable in the demo.' : 'Send a daily reminder to your email at the time above. Requires SMTP on the server.' }}</p>
+              </div>
+              <input [disabled]="isDemo" id="emailReminder" class="switch" type="checkbox" name="emailReminder"
+                     aria-describedby="emailReminder-hint" [(ngModel)]="settings.emailReminder" />
+            </div>
+            <div class="switch-row">
+              <span class="switch-icon"><app-icon name="bell" [size]="18" /></span>
+              <div class="switch-text">
+                <label for="inAppReminder">In-app reminders</label>
+                <p class="muted tiny" id="inAppReminder-hint">{{ isDemo ? 'Scheduled reminders are unavailable in the demo.' : 'Add a notification to your profile inbox at the time above.' }}</p>
+              </div>
+              <input [disabled]="isDemo" id="inAppReminder" class="switch" type="checkbox" name="inAppReminder"
+                     aria-describedby="inAppReminder-hint" [(ngModel)]="settings.inAppReminder" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Appearance -->
+        <section class="card" appMotion aria-labelledby="appearance-heading">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="moon-stars" [size]="20" /></span>
+              <div>
+                <h2 id="appearance-heading" class="section-title">Appearance</h2>
+                <p class="muted small">Previewed instantly &mdash; saved when you save settings.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="theme-tiles" role="group" aria-label="Theme preview">
+            <button *ngFor="let t of themes" type="button" class="theme-tile"
+                    [ngClass]="'tile-' + t.value"
+                    [class.active]="settings.theme === t.value"
+                    [attr.aria-pressed]="settings.theme === t.value"
+                    (click)="settings.theme = t.value; previewTheme(t.value)">
+              <span class="tile-preview" aria-hidden="true">
+                <span class="pv-side"></span>
+                <span class="pv-main">
+                  <span class="pv-line w60"></span>
+                  <span class="pv-card"><span class="pv-flame"></span></span>
+                  <span class="pv-line w40"></span>
+                </span>
+              </span>
+              <span class="tile-label">
+                <app-icon [name]="themeMeta[t.value]?.icon || 'circle'" [size]="17" />
+                <span>
+                  <strong>{{ t.label }}</strong>
+                  <span class="tiny muted">{{ themeMeta[t.value]?.hint }}</span>
+                </span>
+                <app-icon class="tile-check" name="check-circle" [size]="18" />
+              </span>
+            </button>
+          </div>
+
+          <div class="form-field theme-select">
+            <label for="theme">Theme</label>
+            <select id="theme" name="theme" [(ngModel)]="settings.theme" (ngModelChange)="previewTheme($event)">
+              <option *ngFor="let t of themes" [value]="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+        </section>
+
+        <div class="save-bar card card-flat">
+          <div class="save-status">
+            <div class="alert error" *ngIf="saveError" role="alert">
+              <app-icon name="alert" [size]="16" />
+              <span>{{ saveError }}</span>
+            </div>
+            <div class="alert success" *ngIf="saved" role="status">
+              <app-icon name="check-circle" [size]="16" />
+              <span>Settings saved.</span>
+            </div>
+            <p class="muted tiny" *ngIf="!saveError && !saved">Changes apply after you save.</p>
+          </div>
+          <button class="btn btn-primary" type="submit" [disabled]="loading">
+            <app-icon name="save" [size]="17" />
+            {{ loading ? 'Saving…' : 'Save settings' }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Privacy & data -->
+      <section class="card" appMotion aria-labelledby="data-heading">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph" style="--glyph: var(--m-request)"><app-icon name="shield" [size]="20" /></span>
+            <div>
+              <h2 id="data-heading" class="section-title">Privacy &amp; data</h2>
+              <p class="muted small">Your reflections belong to you. Export them any time.</p>
+            </div>
+          </div>
+        </div>
+        <p class="muted small">
+          Download everything stored for your account as a JSON file you can keep, analyze, or move to
+          another instance.
+        </p>
+        <div class="chip-row includes">
+          <span class="pill" *ngFor="let item of exportIncludes">{{ item }}</span>
+        </div>
+        <div class="alert error" *ngIf="exportError" role="alert">
+          <app-icon name="alert" [size]="16" />
+          <span>{{ exportError }}</span>
+        </div>
+        <div class="form-actions start">
+          <button class="btn btn-soft" type="button" (click)="exportData()" [disabled]="exporting">
+            <app-icon name="download" [size]="17" />
+            {{ exporting ? 'Preparing…' : 'Download my data (JSON)' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Danger zone -->
+      <section class="card danger-zone" appMotion aria-labelledby="danger-heading">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph" style="--glyph: var(--danger)"><app-icon name="trash" [size]="20" /></span>
+            <div>
+              <p class="overline danger-overline">Danger zone</p>
+              <h2 id="danger-heading" class="section-title">Delete account</h2>
+            </div>
+          </div>
+        </div>
+        <p class="muted small">
+          Permanently removes your account and all of its data from this server. This cannot be undone.
+        </p>
+        <div>
+          <button class="btn btn-danger" type="button" *ngIf="!confirmingDelete" (click)="confirmingDelete = true">
+            <app-icon name="trash" [size]="16" />
+            Delete my account
+          </button>
+        </div>
+        <form class="delete-confirm" *ngIf="confirmingDelete" (ngSubmit)="deleteAccount()">
+          <label class="field-label" for="delete-password">Confirm with your password</label>
+          <div class="input-icon">
+            <app-icon name="lock" [size]="18" />
+            <input id="delete-password" name="deletePassword" type="password" autocomplete="current-password"
+                   [(ngModel)]="deletePassword" />
+          </div>
+          <div class="alert error" *ngIf="deleteError" role="alert">
+            <app-icon name="alert" [size]="16" />
+            <span>{{ deleteError }}</span>
+          </div>
+          <div class="form-actions start">
+            <button class="btn btn-danger" type="submit" [disabled]="deleting">
+              {{ deleting ? 'Deleting…' : 'Permanently delete' }}
+            </button>
+            <button class="btn btn-ghost" type="button" (click)="cancelDelete()">Cancel</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="loading-state" *ngIf="!settings && !loadError">
+  Loading settings…
+</div>
+<div class="alert error" *ngIf="loadError" role="alert">
+  <app-icon name="alert" [size]="16" />
+  <span>{{ loadError }}</span>
+  <button class="btn btn-ghost btn-sm" type="button" (click)="load()">Retry</button>
+</div>

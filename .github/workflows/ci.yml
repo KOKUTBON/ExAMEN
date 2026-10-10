@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examen-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Set up Java
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+      - name: Run backend tests
+        run: ./gradlew test --no-daemon
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examen-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: examen-frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run type check
+        run: npm run typecheck
+      - name: Run frontend tests
+        run: npm test -- --watch=false
+      - name: Build frontend
+        run: npm run build
+
+  demo-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examen-frontend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: examen-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build:demo
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:demo
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: examen-demo
+          path: examen-frontend/dist/examen-demo/browser
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - name: Build backend image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: ./examen-backend
+          file: ./examen-backend/Dockerfile
+          push: false
+          tags: examen-backend:ci
+      - name: Build frontend image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: ./examen-frontend
+          file: ./examen-frontend/Dockerfile
+          push: false
+          tags: examen-frontend:ci
+
+  backup-restore-rehearsal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Generate ephemeral test signing key
+        run: |
+          signing_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$signing_key"
+          echo "APP_JWT_SECRET=$signing_key" >> "$GITHUB_ENV"
+      - name: Start Postgres via Docker Compose
+        run: docker compose up -d postgres
+      - name: Wait for Postgres readiness
+        run: |
+          for i in {1..30}; do
+            if docker compose exec -T postgres pg_isready -U postgres -d examen; then
+              echo "Postgres is ready."
+              break
+            fi
+            sleep 1
+          done
+      - name: Set up Java
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+      - name: Start backend and apply Flyway migrations
+        run: docker compose up -d backend
+      - name: Verify migration history
+        run: |
+          for i in {1..60}; do
+            if curl --fail --silent http://localhost:8080/actuator/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T postgres psql -U postgres -d examen -c "SELECT installed_rank, version, description FROM flyway_schema_history ORDER BY installed_rank;"
+      - name: Execute Backup & Restore Rehearsal Drill
+        run: ./scripts/rehearse-backup-restore.sh
+      - name: Teardown Compose Services
+        if: always()
+        run: docker compose down -v

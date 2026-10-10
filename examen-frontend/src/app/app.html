@@ -1,0 +1,160 @@
+<div *ngIf="isDemo" class="demo-banner" role="note">
+  <strong>Interactive demo</strong> · Sample data and changes stay in this browser. No server, email, or AI calls.
+  <button type="button" (click)="enterDemo()">Explore demo</button>
+  <button type="button" (click)="resetDemo()">Reset demo</button>
+</div>
+<a class="skip-link" [routerLink]="[]" fragment="main">Skip to content</a>
+
+<!-- Signed-in sanctuary: sidebar + workspace -->
+<div class="shell" *ngIf="isLoggedIn && !isLanding; else guestShell" [class.menu-open]="menuOpen">
+  <aside class="sidebar" aria-label="Primary">
+    <a class="brand" routerLink="/dashboard">
+      <app-logo [size]="38" [animated]="true" />
+      <span class="brand-text">
+        <span class="brand-name">Examen</span>
+        <span class="brand-sub">Daily reflection</span>
+      </span>
+    </a>
+
+    <a class="vigil-cta" routerLink="/examination">
+      <span class="vigil-flame" aria-hidden="true"><app-icon name="flame" [size]="18" /></span>
+      <span class="vigil-copy">
+        <strong>Tonight's examen</strong>
+        <small>Five movements · ~10 min</small>
+      </span>
+      <app-icon name="arrow-right" [size]="16" />
+    </a>
+
+    <nav class="side-nav">
+      <p class="nav-group">Practice</p>
+      <a *ngFor="let item of practiceNav" [routerLink]="item.path" routerLinkActive="active">
+        <app-icon [name]="item.icon" [size]="19" />
+        <span>{{ item.label }}</span>
+      </a>
+      <p class="nav-group">Library</p>
+      <a *ngFor="let item of libraryNav" [routerLink]="item.path" routerLinkActive="active">
+        <app-icon [name]="item.icon" [size]="19" />
+        <span>{{ item.label }}</span>
+      </a>
+      <p class="nav-group">Growth</p>
+      <a *ngFor="let item of growthNav" [routerLink]="item.path" routerLinkActive="active">
+        <app-icon [name]="item.icon" [size]="19" />
+        <span>{{ item.label }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="segmented theme-switch" role="group" aria-label="Theme">
+        <button
+          type="button"
+          *ngFor="let option of themeOptions"
+          [class.active]="theme === option.value"
+          [attr.aria-pressed]="theme === option.value"
+          [attr.title]="option.label + ' theme'"
+          (click)="setTheme(option.value)"
+        >
+          <app-icon [name]="option.icon" [size]="15" />
+          <span class="sr-only">{{ option.label }} theme</span>
+        </button>
+      </div>
+
+      <div class="account">
+        <span class="avatar" aria-hidden="true">{{ userInitial }}</span>
+        <span class="account-name" [title]="userName">{{ userName }}</span>
+        <button type="button" class="icon-btn" (click)="logout()" title="Log out">
+          <app-icon name="logout" [size]="18" />
+          <span class="sr-only">Log out</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <button type="button" class="scrim" aria-label="Close menu" (click)="toggleMenu()"></button>
+
+  <div class="workspace">
+    <header class="topbar" [class.scrolled]="isScrolled">
+      <button type="button" class="icon-btn menu-btn" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen">
+        <app-icon name="menu" [size]="20" />
+        <span class="sr-only">Open menu</span>
+      </button>
+      <a class="brand mobile-brand" routerLink="/dashboard">
+        <app-logo [size]="30" />
+        <span class="brand-name">Examen</span>
+      </a>
+      <div class="salutation">
+        <span class="salutation-hello">{{ greeting }}<ng-container *ngIf="firstName">, {{ firstName }}</ng-container></span>
+        <span class="salutation-date">{{ today | date: 'EEEE, d MMMM' }}</span>
+      </div>
+      <span class="spacer"></span>
+      <button type="button" class="icon-btn" (click)="cycleTheme()" [title]="'Theme: ' + theme">
+        <app-icon [name]="themeIcon" [size]="18" />
+        <span class="sr-only">Switch theme</span>
+      </button>
+      <a class="btn btn-primary btn-sm topbar-cta" routerLink="/examination">
+        <app-icon name="flame" [size]="15" />
+        <span>Begin examen</span>
+      </a>
+    </header>
+
+    <main id="main" class="app-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Quick navigation">
+    <a
+      *ngFor="let item of mobileNav"
+      [routerLink]="item.path"
+      routerLinkActive="active"
+      [class.tab-primary]="item.path === '/examination'"
+    >
+      <span class="tab-icon"><app-icon [name]="item.icon" [size]="20" /></span>
+      <span class="tab-label">{{ item.label }}</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Visitors: landing + auth -->
+<ng-template #guestShell>
+  <div class="guest" [class.guest-landing]="isLanding">
+    <header class="guest-bar" [class.scrolled]="isScrolled">
+      <div class="guest-inner">
+        <a class="brand" routerLink="/">
+          <app-logo [size]="34" [animated]="true" />
+          <span class="brand-name">Examen</span>
+        </a>
+
+        <nav class="guest-nav" *ngIf="isLanding && !isLoggedIn">
+          <a routerLink="/" fragment="movements">The five movements</a>
+          <a routerLink="/" fragment="practice">Practice</a>
+          <a routerLink="/" fragment="insight">Insight</a>
+          <a routerLink="/" fragment="trust">Privacy</a>
+        </nav>
+
+        <div class="guest-actions">
+          <button type="button" class="icon-btn" (click)="cycleTheme()" [title]="'Theme: ' + theme">
+            <app-icon [name]="themeIcon" [size]="18" />
+            <span class="sr-only">Switch theme</span>
+          </button>
+          <ng-container *ngIf="isLoggedIn; else visitor">
+            <a class="btn btn-primary btn-sm" routerLink="/dashboard">
+              <span>Open Examen</span>
+              <app-icon name="arrow-right" [size]="15" />
+            </a>
+          </ng-container>
+          <ng-template #visitor>
+            <a class="btn btn-ghost btn-sm" routerLink="/auth/login">Log in</a>
+            <a class="btn btn-primary btn-sm" routerLink="/auth/register">
+              <span>Begin</span>
+              <app-icon name="arrow-right" [size]="15" />
+            </a>
+          </ng-template>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="guest-main" [class.landing]="isLanding" [class.auth]="isAuthPage">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</ng-template>

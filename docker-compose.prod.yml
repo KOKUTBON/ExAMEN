@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: examen_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-examen}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./examen-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-examen}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET to a random secret of at least 32 bytes}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-${APP_PUBLIC_URL}}
+      APP_PASSWORD_RESET_URL: ${APP_PASSWORD_RESET_URL:-${APP_PUBLIC_URL}/auth/reset}
+      APP_PASSWORD_RESET_FROM: ${APP_PASSWORD_RESET_FROM:-no-reply@localhost}
+      APP_PASSWORD_RESET_MAIL_ENABLED: ${APP_PASSWORD_RESET_MAIL_ENABLED:-true}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-true}
+      APP_REMINDER_ENABLED: ${APP_REMINDER_ENABLED:-true}
+      APP_REMINDER_MAIL_ENABLED: ${APP_REMINDER_MAIL_ENABLED:-true}
+      APP_REMINDER_FROM: ${APP_REMINDER_FROM:-no-reply@localhost}
+      APP_REMINDER_APP_URL: ${APP_REMINDER_APP_URL:-${APP_PUBLIC_URL}/examination}
+      APP_GEMINI_ENABLED: ${APP_GEMINI_ENABLED:-false}
+      APP_GEMINI_API_KEY: ${APP_GEMINI_API_KEY:-}
+      APP_GEMINI_MODEL: ${APP_GEMINI_MODEL:-gemini-2.5-flash}
+    depends_on:
+      - postgres
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  frontend:
+    build:
+      context: ./examen-frontend
+      args:
+        APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Set APP_PUBLIC_URL to the public HTTPS origin}
+    environment:
+      API_URL: http://backend:8080/api
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Set APP_PUBLIC_URL to the public HTTPS origin}
+    depends_on:
+      - backend
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+
+volumes:
+  pgdata:

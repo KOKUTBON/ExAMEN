@@ -1,0 +1,4 @@
+/* Layout styles are shared from ../login/login.component.scss */
+.form-row {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}

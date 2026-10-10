@@ -1,0 +1,74 @@
+<div class="section-stack fade-up">
+  <div class="page-header">
+    <div>
+      <span class="page-icon"><app-icon name="layers" [size]="24" /></span>
+      <p class="eyebrow">Categories</p>
+      <h1>Organize your reflections</h1>
+      <p class="muted">Group questions by themes to keep each evening's examen <em class="accent">focused</em>.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="button" (click)="onCreate()">
+        <app-icon name="plus" [size]="18" />
+        New category
+      </button>
+    </div>
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage" role="alert">
+    <app-icon name="alert" [size]="16" />
+    <span>{{ errorMessage }}</span>
+  </div>
+  <div class="loading-state" *ngIf="loading">Loading categories…</div>
+
+  <div class="card table-card" *ngIf="categories.length">
+    <div class="card-header">
+      <div class="card-title">
+        <h2 class="table-title">Your themes</h2>
+        <span class="pill accent num">{{ categories.length }}</span>
+      </div>
+      <p class="muted tiny hint">Edit a theme to refine the questions it gathers.</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col" class="col-desc">Description</th>
+          <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let c of categories; let i = index" class="cat-row">
+          <td>
+            <div class="cat-name">
+              <span class="card-glyph row-glyph" [ngClass]="tones[i % tones.length]">
+                <app-icon name="layers" [size]="18" />
+              </span>
+              <span class="name">{{ c.name }}</span>
+            </div>
+          </td>
+          <td class="muted col-desc">{{ c.description || '—' }}</td>
+          <td class="actions">
+            <div class="row-actions">
+              <button class="btn btn-ghost btn-sm" type="button" (click)="onEdit(c)">
+                <app-icon name="pencil" [size]="15" />
+                Edit
+              </button>
+              <button class="btn btn-danger btn-sm" type="button" (click)="onDelete(c)">
+                <app-icon name="trash" [size]="15" />
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!categories.length && !loading">
+    <app-icon name="layers" [size]="30" />
+    <strong>No categories yet</strong>
+    <span>Create your first one to start grouping questions.</span>
+  </div>
+</div>
