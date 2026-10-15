@@ -1,0 +1,106 @@
+<section class="auth fade-up">
+  <aside class="auth-night card card-night">
+    <div class="brand">
+      <app-logo [size]="52" [animated]="true" />
+      <span class="wordmark">Examen<small>The daily examen</small></span>
+    </div>
+    <div>
+      <p class="eyebrow">Begin the practice</p>
+      <h1>A few quiet minutes, <em class="accent">every evening.</em></h1>
+    </div>
+    <blockquote class="quote">
+      &ldquo;Love ought to show itself in deeds more than in words.&rdquo;
+      <cite>St. Ignatius of Loyola</cite>
+    </blockquote>
+    <ol class="movements" aria-label="The five movements of the examen">
+      <li *ngFor="let m of movements" [ngClass]="'m-' + m.key">
+        <span class="glyph"><app-icon [name]="m.icon" [size]="17" /></span>
+        <span><strong>{{ m.name }}</strong><span class="hint">{{ m.hint }}</span></span>
+      </li>
+    </ol>
+  </aside>
+
+  <div class="auth-card card">
+    <div class="auth-header">
+      <div>
+        <p class="overline">Register</p>
+        <h2>Join <em class="accent">Examen</em></h2>
+        <p class="muted small">It only takes a minute to get started.</p>
+      </div>
+      <a routerLink="/auth/login" class="btn btn-ghost btn-sm">Back to login</a>
+    </div>
+
+    <form class="form-grid" [formGroup]="registerForm" (ngSubmit)="register()">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="firstname">First name</label>
+          <div class="input-icon">
+            <app-icon name="user" [size]="18" />
+            <input id="firstname" type="text" autocomplete="given-name" placeholder="Ada" formControlName="firstname" />
+          </div>
+          <div class="alert error field-alert" *ngIf="firstNameCtrl?.invalid && firstNameCtrl?.touched">First name is required.</div>
+        </div>
+        <div class="form-field">
+          <label for="lastname">Last name</label>
+          <div class="input-icon">
+            <app-icon name="user" [size]="18" />
+            <input id="lastname" type="text" autocomplete="family-name" placeholder="Lovelace" formControlName="lastname" />
+          </div>
+          <div class="alert error field-alert" *ngIf="lastNameCtrl?.invalid && lastNameCtrl?.touched">Last name is required.</div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="email">Email</label>
+        <div class="input-icon">
+          <app-icon name="mail" [size]="18" />
+          <input id="email" type="email" autocomplete="email" placeholder="you@example.com" formControlName="email" />
+        </div>
+        <div class="alert error field-alert" *ngIf="emailCtrl?.invalid && emailCtrl?.touched">Enter a valid email.</div>
+      </div>
+      <div class="form-field">
+        <label for="password">Password</label>
+        <div class="input-icon has-reveal">
+          <app-icon name="lock" [size]="18" />
+          <input id="password" [type]="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="••••••••" formControlName="password" />
+          <button type="button" class="icon-btn reveal" [attr.aria-pressed]="showPassword"
+                  [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'" (click)="showPassword = !showPassword">
+            <app-icon name="eye" [size]="18" />
+          </button>
+        </div>
+        <p class="field-hint">At least 8 characters, with uppercase, lowercase, number, and symbol.</p>
+        <div class="alert error field-alert" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+          Password must include upper, lower, number, and symbol.
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="confirm">Confirm password</label>
+        <div class="input-icon">
+          <app-icon name="key" [size]="18" />
+          <input id="confirm" [type]="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="Repeat password" formControlName="confirmPassword" />
+        </div>
+        <div class="alert error field-alert" *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.value.password !== registerForm.value.confirmPassword">
+          Passwords do not match.
+        </div>
+      </div>
+
+      <div class="alert success" *ngIf="successMessage" role="status">
+        <app-icon name="check-circle" [size]="16" />
+        <span>{{ successMessage }}</span>
+      </div>
+      <div class="alert error" *ngIf="errorMessage" role="alert">
+        <app-icon name="alert" [size]="16" />
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" type="submit" [disabled]="loading || registerForm.invalid">
+        {{ loading ? 'Creating account…' : 'Create account' }}
+        <app-icon name="arrow-right" [size]="18" />
+      </button>
+    </form>
+
+    <p class="muted small helper">
+      Already registered?
+      <a routerLink="/auth/login">Sign in instead</a>.
+    </p>
+  </div>
+</section>

@@ -1,0 +1,183 @@
+<div class="section-stack library">
+  <div class="page-header">
+    <div>
+      <span class="page-icon"><app-icon name="quill" [size]="24" /></span>
+      <p class="eyebrow">Questions</p>
+      <h1>The prompt <em class="accent">library</em></h1>
+      <p class="muted">AI prompts and your own questions, gathered by theme for each evening's examen.</p>
+    </div>
+    <div class="chip-row">
+      <span class="pill"><app-icon name="sparkle" [size]="13" />{{ aiQuestions.length }} AI</span>
+      <span class="pill accent"><app-icon name="quill" [size]="13" />{{ customQuestions.length }} custom</span>
+      <span class="pill"><app-icon name="layers" [size]="13" />{{ categories.length }} categories</span>
+    </div>
+  </div>
+
+  <div class="library-grid">
+    <div class="card question-form" [class.is-editing]="isEditing">
+      <div class="card-title">
+        <span class="card-glyph"><app-icon [name]="isEditing ? 'pencil' : 'plus'" [size]="20" /></span>
+        <div>
+          <p class="overline">{{ isEditing ? 'Edit question' : 'New prompt' }}</p>
+          <h2>{{ isEditing ? 'Update your custom prompt' : 'Create a custom prompt' }}</h2>
+        </div>
+      </div>
+      <p class="muted small">Choose a category and save the prompt.</p>
+
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-field">
+          <label for="text">Question text</label>
+          <textarea id="text" class="prompt-input" rows="3" placeholder="Write the prompt" formControlName="text"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="categoryId">Category</label>
+          <div class="input-icon">
+            <app-icon name="layers" [size]="18" />
+            <select id="categoryId" formControlName="categoryId">
+              <option [ngValue]="null" disabled>Select a category</option>
+              <option *ngFor="let category of categories" [ngValue]="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" [disabled]="loading || form.invalid">
+            <app-icon [name]="isEditing ? 'save' : 'plus'" [size]="16" />
+            {{ isEditing ? 'Save changes' : 'Add question' }}
+          </button>
+          <button class="btn btn-ghost" type="button" *ngIf="isEditing" (click)="cancelEdit()">
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <div class="form-note">
+        <app-icon name="info" [size]="16" />
+        <p class="tiny">AI prompts are read-only and always available. Your custom questions can be edited,
+          grouped into categories, and used in daily sessions.</p>
+      </div>
+    </div>
+
+    <div class="card library-panel" appMotion>
+      <div class="alert error" *ngIf="error"><app-icon name="alert" [size]="16" />{{ error }}</div>
+      <div class="loading-state" *ngIf="loading">Loading questions...</div>
+
+      <section class="library-section" *ngIf="customQuestions.length">
+        <div class="section-head">
+          <p class="overline"><app-icon name="quill" [size]="14" /> Your questions</p>
+          <span class="tag tag-accent num">{{ customQuestions.length }}</span>
+        </div>
+        <ul class="question-list list-reset">
+          <li class="question-row mine" *ngFor="let q of customQuestions"
+              [ngClass]="'m-' + categoryTheme(q.category.name).tone"
+              [class.editing]="editingId === q.id">
+            <span class="q-mark" aria-hidden="true"><app-icon [name]="categoryTheme(q.category.name).icon" [size]="16" /></span>
+            <div class="q-body">
+              <div class="question-text">{{ q.text }}</div>
+              <div class="q-meta">
+                <span class="q-cat">{{ q.category.name || 'Reflection' }}</span>
+                <span class="tag" [ngClass]="q.responseType === 'YES_NO' ? 'tag-info' : (q.responseType === 'SCALE_1_5' ? 'tag-accent' : 'tag-muted')">{{ responseLabel(q) }}</span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button class="btn btn-text btn-sm" type="button" (click)="startEdit(q)">
+                <app-icon name="pencil" [size]="14" />Edit
+              </button>
+              <button class="btn btn-text btn-sm danger" type="button" (click)="delete(q)">
+                <app-icon name="trash" [size]="14" />Delete
+              </button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <div class="empty-state" *ngIf="!customQuestions.length && !loading">
+        <app-icon name="quill" [size]="26" />
+        <strong>Write your first prompt</strong>
+        No custom questions yet. Add one to personalize your examen.
+      </div>
+
+      <section class="library-section" *ngIf="aiQuestions.length">
+        <div class="section-head">
+          <p class="overline"><app-icon name="sparkle" [size]="14" /> AI question library</p>
+          <span class="tag tag-muted num">{{ aiQuestions.length }}</span>
+        </div>
+        <ul class="question-list list-reset">
+          <li class="question-row" *ngFor="let q of aiQuestions" [ngClass]="'m-' + categoryTheme(q.category.name).tone">
+            <span class="q-mark" aria-hidden="true"><app-icon [name]="categoryTheme(q.category.name).icon" [size]="16" /></span>
+            <div class="q-body">
+              <div class="question-text">{{ q.text }}</div>
+              <div class="q-meta">
+                <span class="q-cat">{{ q.category.name || 'Reflection' }}</span>
+                <span class="tag" [ngClass]="q.responseType === 'YES_NO' ? 'tag-info' : (q.responseType === 'SCALE_1_5' ? 'tag-accent' : 'tag-muted')">{{ responseLabel(q) }}</span>
+              </div>
+            </div>
+            <span class="tag tag-muted ai-tag"><app-icon name="sparkle" [size]="12" />AI</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="card category-panel" appMotion>
+    <div class="card-header">
+      <div class="card-title">
+        <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="layers" [size]="20" /></span>
+        <div>
+          <p class="overline">Categories</p>
+          <h2>{{ isCategoryEditing ? 'Edit category' : 'Create a category' }}</h2>
+        </div>
+      </div>
+      <p class="muted small cat-lede">Group questions by theme for focused examinations. Categories shape the scoring breakdown in your profile analytics.</p>
+    </div>
+
+    <form class="category-form" [formGroup]="categoryForm" (ngSubmit)="submitCategory()">
+      <div class="form-field">
+        <label for="categoryName">Name</label>
+        <input id="categoryName" type="text" formControlName="name" placeholder="Ex: Gratitude" />
+      </div>
+      <div class="form-field">
+        <label for="categoryDescription">Description</label>
+        <input id="categoryDescription" type="text" formControlName="description" placeholder="Optional" />
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" [disabled]="categorySaving || categoryForm.invalid">
+          <app-icon [name]="isCategoryEditing ? 'save' : 'plus'" [size]="16" />
+          {{ isCategoryEditing ? 'Save category' : 'Add category' }}
+        </button>
+        <button class="btn btn-ghost" type="button" *ngIf="isCategoryEditing" (click)="cancelCategoryEdit()">
+          Cancel
+        </button>
+      </div>
+    </form>
+
+    <div class="alert error" *ngIf="categoryError"><app-icon name="alert" [size]="16" />{{ categoryError }}</div>
+
+    <ul class="category-grid list-reset" *ngIf="categories.length">
+      <li class="category-card" *ngFor="let category of categories"
+          [ngClass]="'m-' + categoryTheme(category.name).tone"
+          [class.editing]="categoryEditingId === category.id">
+        <span class="cat-icon" aria-hidden="true"><app-icon [name]="categoryTheme(category.name).icon" [size]="20" /></span>
+        <div class="cat-body">
+          <div class="category-name">{{ category.name }}</div>
+          <div class="muted tiny">{{ category.description || 'No description' }}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-text btn-sm" type="button" (click)="startCategoryEdit(category)">
+            <app-icon name="pencil" [size]="14" />Edit
+          </button>
+          <button class="btn btn-text btn-sm danger" type="button" (click)="deleteCategory(category)">
+            <app-icon name="trash" [size]="14" />Delete
+          </button>
+        </div>
+      </li>
+    </ul>
+
+    <div class="empty-state" *ngIf="!categories.length">
+      <app-icon name="layers" [size]="26" />
+      <strong>No themes yet</strong>
+      No categories yet. Create one to organize your questions.
+    </div>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 0
+    directory: "/examen-frontend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle"
+    open-pull-requests-limit: 0
+    directory: "/examen-backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    open-pull-requests-limit: 0
+    directory: "/"
+    schedule:
+      interval: "weekly"

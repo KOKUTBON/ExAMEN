@@ -1,0 +1,73 @@
+<div class="section-stack fade-up">
+  <div class="page-header">
+    <div>
+      <span class="page-icon"><app-icon name="layers" [size]="24" /></span>
+      <p class="eyebrow">Categories</p>
+      <h1>Create a <em class="accent">category</em></h1>
+      <p class="muted">Define a new theme to organize your questions.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-ghost" routerLink="/categories">
+        <app-icon name="arrow-left" [size]="17" />
+        Back to list
+      </a>
+    </div>
+  </div>
+
+  <div class="editor">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph"><app-icon name="plus" [size]="20" /></span>
+          <div>
+            <h2 class="form-title">New theme</h2>
+            <p class="muted tiny">A short name and an optional note on what it holds.</p>
+          </div>
+        </div>
+      </div>
+
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="createCategory()">
+        <div class="form-field">
+          <label for="name">Name</label>
+          <div class="input-icon">
+            <app-icon name="layers" [size]="18" />
+            <input id="name" type="text" placeholder="Morning reflection" formControlName="name" />
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="description">Description</label>
+          <textarea id="description" rows="4" placeholder="Optional context" formControlName="description"></textarea>
+          <span class="field-hint">Shown beside the category in your question library.</span>
+        </div>
+
+        <div class="alert error" *ngIf="errorMessage" role="alert">
+          <app-icon name="alert" [size]="16" />
+          <span>{{ errorMessage }}</span>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" type="button" routerLink="/categories">Cancel</button>
+          <button class="btn btn-primary" type="submit" [disabled]="loading">
+            <app-icon name="check" [size]="17" />
+            {{ loading ? 'Creating…' : 'Create category' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <aside class="card card-night preview" aria-label="Preview">
+      <p class="overline">Preview</p>
+      <div class="preview-item">
+        <span class="card-glyph"><app-icon name="layers" [size]="20" /></span>
+        <div>
+          <strong class="serif">{{ form.value.name || 'Untitled theme' }}</strong>
+          <p class="muted small">{{ form.value.description || 'A quiet space for related questions.' }}</p>
+        </div>
+      </div>
+      <div class="divider-ornament">tip</div>
+      <p class="muted small tip">
+        Keep themes broad &mdash; gratitude, prayer, relationships, work &mdash; so each evening's
+        questions stay gentle and focused.
+      </p>
+    </aside>
+  </div>
+</div>

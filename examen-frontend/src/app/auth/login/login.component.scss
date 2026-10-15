@@ -1,0 +1,239 @@
+/* Shared auth layout: also used by register + reset-password (see their styleUrls). */
+
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(18px, 2.4vw, 32px);
+  align-items: stretch;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(8px, 3vw, 36px) 0;
+}
+
+/* ---------- Candlelit panel ---------- */
+
+.auth-night {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: clamp(24px, 3.4vw, 44px);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  isolation: isolate;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -120px;
+    bottom: -140px;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(230, 185, 89, 0.16), transparent 65%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 3.4vw, 44px);
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.wordmark small {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.quote {
+  margin: 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2px solid rgba(230, 185, 89, 0.55);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.5;
+  color: var(--text-2);
+
+  cite {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-ui);
+    font-style: normal;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+}
+
+.movements {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  counter-reset: mv;
+
+  li {
+    --tone: color-mix(in srgb, var(--m) 55%, #fff5de);
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    transition: background 0.3s ease, transform 0.3s var(--ease);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(3px);
+    }
+  }
+
+  .glyph {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+  }
+
+  strong {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  span.hint {
+    display: block;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+}
+
+/* ---------- Form card ---------- */
+
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: clamp(22px, 3.2vw, 44px);
+  border-radius: var(--radius-xl);
+}
+
+.auth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0 0 4px;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.form-grid .btn-primary {
+  margin-top: 4px;
+}
+
+.alert > .ex-icon {
+  margin-top: 2px;
+}
+
+.field-alert {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.input-icon.has-reveal > input {
+  padding-right: 48px;
+}
+
+.reveal {
+  position: absolute;
+  right: 5px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+
+  &[aria-pressed='true'] {
+    color: var(--accent);
+  }
+}
+
+.helper {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.helper a {
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .auth {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+  }
+
+  .auth-night {
+    gap: 16px;
+  }
+
+  .movements {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-top: 4px;
+
+    li {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+      gap: 6px;
+      padding: 6px 2px;
+    }
+
+    strong {
+      font-size: 12px;
+    }
+
+    span.hint {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .auth-card,
+  .auth-night {
+    border-radius: var(--radius-lg);
+  }
+}

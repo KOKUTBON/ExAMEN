@@ -1,0 +1,117 @@
+<div class="section-stack todos">
+  <div class="page-header" appMotion>
+    <div>
+      <span class="page-icon"><app-icon name="checklist" [size]="24" /></span>
+      <p class="eyebrow">Todos</p>
+      <h1>Your <em class="accent">commitments</em></h1>
+      <p class="muted">Small, concrete resolutions that carry tonight's examen into tomorrow.</p>
+    </div>
+    <div class="chip-row">
+      <span class="pill"><span class="dot"></span>{{ pendingCount }} pending</span>
+      <span class="pill" [class.pill-danger]="overdueCount > 0"><app-icon name="clock" [size]="13" />{{ overdueCount }} overdue</span>
+    </div>
+  </div>
+
+  <div class="overview" appMotion>
+    <div class="card overview-progress">
+      <div class="progress-copy">
+        <p class="overline">Faithfulness</p>
+        <div class="stat-value num">{{ completionPercent }}%</div>
+        <p class="muted tiny">{{ completedCount }} of {{ totalCount }} commitments kept</p>
+      </div>
+      <div class="meter m-resolve"><span [style.width.%]="completionPercent"></span></div>
+    </div>
+    <div class="card card-flat summary-item">
+      <span class="stat-label"><app-icon name="list" [size]="15" />Total tasks</span>
+      <span class="stat-value num">{{ totalCount }}</span>
+    </div>
+    <div class="card card-flat summary-item">
+      <span class="stat-label"><app-icon name="hourglass" [size]="15" />Pending</span>
+      <span class="stat-value num">{{ pendingCount }}</span>
+    </div>
+    <div class="card card-flat summary-item">
+      <span class="stat-label"><app-icon name="calendar" [size]="15" />Due today</span>
+      <span class="stat-value num">{{ dueTodayCount }}</span>
+    </div>
+    <div class="card card-flat summary-item" [class.is-danger]="overdueCount > 0">
+      <span class="stat-label"><app-icon name="alert" [size]="15" />Overdue</span>
+      <span class="stat-value num">{{ overdueCount }}</span>
+    </div>
+  </div>
+
+  <div class="card composer" appMotion>
+    <div class="form-field composer-title">
+      <label for="todo-title">Title</label>
+      <div class="input-icon">
+        <app-icon name="sprout" [size]="18" />
+        <input id="todo-title" type="text" [(ngModel)]="draftTitle" [maxlength]="maxTitleLength" placeholder="Add a todo" (keydown.enter)="create()" />
+      </div>
+    </div>
+    <div class="form-field">
+      <label for="todo-due">Due at</label>
+      <div class="input-icon">
+        <app-icon name="calendar" [size]="18" />
+        <input id="todo-due" type="datetime-local" [(ngModel)]="draftDueAt" />
+      </div>
+    </div>
+    <button class="btn btn-primary composer-btn" type="button" (click)="create()">
+      <app-icon name="plus" [size]="16" />
+      Add
+    </button>
+  </div>
+
+  <div class="alert error" *ngIf="error"><app-icon name="alert" [size]="16" />{{ error }}</div>
+
+  <div class="toolbar">
+    <span class="field-label" id="todo-filter-label">Filter by due</span>
+    <div class="segmented" role="group" aria-labelledby="todo-filter-label">
+      <button
+        type="button"
+        *ngFor="let option of filterOptions"
+        [class.active]="filterRange === option.value"
+        [attr.aria-pressed]="filterRange === option.value"
+        (click)="filterRange = option.value"
+      >{{ option.label }}</button>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">Loading todos…</div>
+
+  <ul class="todo-list list-reset" *ngIf="filteredTodos.length" appMotion>
+    <li class="todo-item" *ngFor="let todo of filteredTodos" (click)="toggleDone(todo)" (keydown.enter)="toggleDone(todo)" (keydown.space)="$event.preventDefault(); toggleDone(todo)"
+        tabindex="0" role="checkbox" [attr.aria-checked]="todo.completed" [class.done]="todo.completed" [class.overdue]="isOverdue(todo)">
+      <span class="check" [class.done]="todo.completed" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
+        </svg>
+      </span>
+      <div class="todo-content">
+        <div class="title" [class.done]="todo.completed">{{ todo.title }}</div>
+        <span class="due-chip num" [class.is-overdue]="isOverdue(todo)">
+          <app-icon name="clock" [size]="13" />{{ todo.dueAt | date:'medium' }}
+        </span>
+      </div>
+      <span class="tag" [ngClass]="todo.completed ? 'tag-success' : (isOverdue(todo) ? 'tag-danger' : 'tag-muted')">
+        {{ todo.completed ? 'Done' : (isOverdue(todo) ? 'Overdue' : 'Pending') }}
+      </span>
+      <button class="btn btn-text btn-sm delete-btn" type="button" (click)="remove(todo, $event)" (keydown.enter)="$event.stopPropagation()" (keydown.space)="$event.stopPropagation()">
+        <app-icon name="trash" [size]="15" />
+        Delete
+      </button>
+    </li>
+  </ul>
+
+  <div class="empty-state" *ngIf="!filteredTodos.length && !loading">
+    <app-icon name="check-circle" [size]="28" />
+    <strong>Nothing here</strong>
+    {{ emptyMessage }}
+  </div>
+
+  <div class="card card-flat guide" appMotion>
+    <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="info" [size]="18" /></span>
+    <p class="small muted">
+      <strong>Plan, schedule, complete.</strong> Todos are time-bound tasks with clear due dates. Completed items
+      count toward the goal factor of your profile score and appear in your PDF report.
+    </p>
+  </div>
+</div>

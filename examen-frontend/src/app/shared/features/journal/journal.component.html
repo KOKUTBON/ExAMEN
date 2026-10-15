@@ -1,0 +1,102 @@
+<div class="section-stack journal">
+  <div class="page-header" appMotion>
+    <div>
+      <span class="page-icon"><app-icon name="book" [size]="24" /></span>
+      <p class="eyebrow">Journal</p>
+      <h1>Capture your reflections</h1>
+      <p class="muted">
+        A private page for the day's <em class="accent">quiet</em> insights. Your 20 most recent entries are
+        shown below.
+      </p>
+    </div>
+    <div class="actions">
+      <span class="pill"><app-icon name="lock" [size]="14" /> Private to you</span>
+      <span class="pill accent num">{{ entries.length }} recent</span>
+    </div>
+  </div>
+
+  <div class="desk">
+    <section class="journal-book card" appMotion>
+      <div class="book-spine" aria-hidden="true"></div>
+      <div class="page">
+        <header class="page-top">
+          <div>
+            <label class="page-label" for="entry">New entry</label>
+            <span class="page-date serif">{{ today | date:'EEEE, d MMMM y' }}</span>
+          </div>
+          <app-icon class="page-quill" name="quill" [size]="20" />
+        </header>
+
+        <textarea
+          id="entry"
+          class="page-writing"
+          [(ngModel)]="content"
+          rows="8"
+          [maxlength]="maxLength"
+          placeholder="What did you learn or feel today?"
+        ></textarea>
+
+        <div class="page-foot">
+          <div class="count">
+            <div class="meter" aria-hidden="true"><span [style.width.%]="usedPercent"></span></div>
+            <span class="tiny muted num">{{ content.length }} / {{ maxLength }}</span>
+          </div>
+          <button class="btn btn-primary" (click)="save()" [disabled]="loading || !content.trim()">
+            <app-icon name="save" [size]="16" />
+            {{ loading ? 'Saving…' : 'Save entry' }}
+          </button>
+        </div>
+        <div class="alert error" *ngIf="error"><app-icon name="alert" [size]="16" />{{ error }}</div>
+      </div>
+    </section>
+
+    <aside class="desk-side" appMotion>
+      <div class="card card-flat side-card">
+        <p class="overline"><app-icon name="sparkle" [size]="14" /> If words are slow to come</p>
+        <ul class="prompt-list list-reset">
+          <li *ngFor="let prompt of writingPrompts" class="serif">{{ prompt }}</li>
+        </ul>
+      </div>
+
+      <div class="card card-flat side-card">
+        <p class="overline">How it works</p>
+        <h2 class="side-title">Short daily reflections</h2>
+        <p class="muted small">
+          Journal entries are separate from examination sessions. Use them to capture insights or
+          moments you want to revisit later.
+        </p>
+        <div class="side-note">
+          <app-icon name="shield" [size]="16" />
+          <p class="small"><strong>Saved to your account.</strong> Press “Save entry” to store a note; it appears in the list immediately.</p>
+        </div>
+        <div class="side-note">
+          <app-icon name="history" [size]="16" />
+          <p class="small"><strong>History.</strong> The latest 20 entries stay visible here; the full history is in your data export (Settings).</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="timeline-wrap" *ngIf="entries.length" appMotion>
+    <div class="divider-ornament">Recent entries</div>
+    <ol class="timeline list-reset">
+      <li class="entry" *ngFor="let e of entries">
+        <div class="entry-date" aria-hidden="true">
+          <span class="entry-day num">{{ e.createdAt | date:'d' }}</span>
+          <span class="entry-month">{{ e.createdAt | date:'MMM' }}</span>
+        </div>
+        <span class="entry-node" aria-hidden="true"></span>
+        <article class="entry-card">
+          <time class="entry-time tiny" [attr.datetime]="e.createdAt">{{ e.createdAt | date:'medium' }}</time>
+          <div class="entry-content">{{ e.content }}</div>
+        </article>
+      </li>
+    </ol>
+  </section>
+
+  <div class="empty-state" *ngIf="!entries.length">
+    <app-icon name="book" [size]="28" />
+    <strong>An empty page awaits</strong>
+    No journal entries yet. Start by writing a quick reflection above.
+  </div>
+</div>

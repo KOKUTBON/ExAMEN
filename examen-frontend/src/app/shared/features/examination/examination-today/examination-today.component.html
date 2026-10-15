@@ -1,0 +1,495 @@
+<div class="exam-page" [class.in-session]="activeSession">
+  <div class="sr-only" aria-live="polite" aria-atomic="true">
+    {{ liveAnnouncement }}
+  </div>
+
+  <!-- Sanctuary hero -->
+  <header class="exam-hero card card-night" appMotion>
+
+    <div class="hero-copy">
+      <p class="overline hero-overline">
+        <app-icon name="flame" [size]="14" />
+        Examination of Conscience
+      </p>
+      <h1 class="display" *ngIf="!activeSession">Your <em class="accent">evening</em> examen</h1>
+      <h1 class="display" *ngIf="activeSession">Remain a while <em class="accent">in the light</em></h1>
+      <p class="subtitle">
+        AI-curated questions help you reflect with clarity. Start a session, expand each prompt to
+        write your reflection, rate how you felt, and review your progress in the profile summary.
+      </p>
+
+      <div class="hero-actions">
+        <button
+          class="btn btn-primary btn-lg start-btn"
+          type="button"
+          (click)="startSession()"
+          *ngIf="!activeSession"
+          [disabled]="loading || submitting || !canStartSession"
+        >
+          <app-icon name="flame" [size]="18" />
+          Start today's examen
+        </button>
+        <button
+          class="btn btn-soft"
+          type="button"
+          (click)="scrollToNextUnanswered()"
+          *ngIf="activeSession"
+          [disabled]="!unansweredQuestionId"
+          aria-keyshortcuts="Alt+N"
+          title="Jump to next incomplete question (Alt+N)"
+        >
+          <app-icon name="arrow-right" [size]="16" />
+          Jump to next incomplete <kbd aria-hidden="true">Alt+N</kbd>
+        </button>
+      </div>
+
+      <div class="status-row">
+        <div class="session-status" [class.active]="activeSession">
+          <span class="dot" aria-hidden="true"></span>
+          {{ activeSession ? 'Session in progress' : 'No active session yet' }}
+        </div>
+        <span class="muted small" *ngIf="cooldownRemaining && !activeSession">
+          <app-icon name="hourglass" [size]="14" />
+          Next session available in {{ cooldownRemaining }}.
+        </span>
+        <span class="muted small" *ngIf="!cooldownRemaining">24 hour cooldown after completion.</span>
+      </div>
+    </div>
+
+    <div class="hero-candle" aria-hidden="true" [class.lit]="activeSession || completedToday">
+      <span class="candle-rays"></span>
+      <svg class="candle-flame" viewBox="0 0 40 64" width="56" height="90">
+        <defs>
+          <radialGradient id="exFlameGrad" cx="50%" cy="72%" r="60%">
+            <stop offset="0%" stop-color="#fff6d8" />
+            <stop offset="45%" stop-color="#f3cc77" />
+            <stop offset="100%" stop-color="#e0703c" />
+          </radialGradient>
+        </defs>
+        <path d="M20 2c3 9 15 17 15 33a15 15 0 0 1-30 0c0-7 3-12 7-16 .7 5 3.4 8.4 7 9.6C18 20 17 11 20 2Z" fill="url(#exFlameGrad)" />
+        <path d="M20 36c3 3.4 5 6 5 9.4a5 5 0 0 1-10 0c0-3.4 2-6 5-9.4Z" fill="#fffaf0" opacity="0.85" />
+      </svg>
+      <span class="candle-wick"></span>
+      <span class="candle-wax"></span>
+      <span class="candle-dish"></span>
+    </div>
+
+    <dl class="hero-stats">
+      <div class="hero-stat">
+        <dt class="overline"><app-icon name="flame" [size]="14" /> Streak</dt>
+        <dd class="num">{{ streakDays }}<small>{{ streakDays === 1 ? 'day' : 'days' }}</small></dd>
+      </div>
+      <div class="hero-stat">
+        <dt class="overline"><app-icon name="moon-stars" [size]="14" /> Tonight</dt>
+        <dd>
+          <ng-container *ngIf="activeSession">{{ answeredCount }}<small>/ {{ totalQuestions }}</small></ng-container>
+          <ng-container *ngIf="!activeSession">{{ completedToday ? 'Offered' : 'Awaiting' }}</ng-container>
+        </dd>
+      </div>
+      <div class="hero-stat">
+        <dt class="overline"><app-icon name="smile" [size]="14" /> Feeling</dt>
+        <dd class="num">{{ (activeSession ? sessionMoodScore : lastSession?.moodScore) || '–' }}<small>/ 5</small></dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="alert error" *ngIf="errorMessage">
+    <app-icon name="alert" [size]="18" />
+    <span>{{ errorMessage }}</span>
+  </div>
+  <div class="alert warn" *ngIf="cooldownMessage">
+    <app-icon name="hourglass" [size]="18" />
+    <span>{{ cooldownMessage }}</span>
+  </div>
+
+  <!-- Finish state -->
+  <section class="amen card card-night fade-up" *ngIf="successMessage" role="status">
+    <span class="amen-seal" aria-hidden="true"><app-icon name="check-circle" [size]="30" /></span>
+    <div>
+      <p class="overline">Amen</p>
+      <h2 class="serif">{{ successMessage }}</h2>
+      <p class="muted small">Carrying your reflections to your growth summary…</p>
+    </div>
+  </section>
+
+  <!-- Sanctuary: guidance and last session (before a session starts) -->
+  <div class="sanctuary-grid" *ngIf="!activeSession && !successMessage">
+    <section class="exam-guide card" appMotion>
+      <p class="eyebrow">How it works</p>
+      <h2>Daily session flow</h2>
+      <p class="muted small">
+        Each session opens once per day. Expand each prompt to respond, reflect, and rate your
+        feelings, then submit to lock the record and update your analytics.
+      </p>
+      <ol class="guide-steps">
+        <li class="guide-step">
+          <span class="card-glyph" style="--glyph: var(--m-relish)"><app-icon name="flame" [size]="18" /></span>
+          <div>
+            <h3>Open the session</h3>
+            <p>Sessions are time-stamped and saved to your account.</p>
+          </div>
+        </li>
+        <li class="guide-step">
+          <span class="card-glyph" style="--glyph: var(--m-request)"><app-icon name="quill" [size]="18" /></span>
+          <div>
+            <h3>Answer every prompt</h3>
+            <p>Questions expand into a focused space for reflection and feeling ratings.</p>
+          </div>
+        </li>
+        <li class="guide-step">
+          <span class="card-glyph" style="--glyph: var(--m-review)"><app-icon name="smile" [size]="18" /></span>
+          <div>
+            <h3>Reflect and rate</h3>
+            <p>Each prompt captures a reflection and a feeling rating.</p>
+          </div>
+        </li>
+        <li class="guide-step">
+          <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="check-circle" [size]="18" /></span>
+          <div>
+            <h3>Submit and review</h3>
+            <p>Submitting updates your streak and profile metrics instantly.</p>
+          </div>
+        </li>
+      </ol>
+      <div class="guide-meta">
+        <span class="pill"><app-icon name="hourglass" [size]="14" /> 24h cooldown</span>
+        <span class="pill"><app-icon name="quill" [size]="14" /> Reflection + feeling</span>
+        <span class="pill"><app-icon name="save" [size]="14" /> Autosave on</span>
+      </div>
+    </section>
+
+    <section class="exam-recent card" *ngIf="lastSession" appMotion>
+      <p class="eyebrow">Last session</p>
+      <h2>{{ lastSession.completedAt ? 'Completed' : 'In progress' }}</h2>
+      <p class="muted small recent-date">
+        <app-icon name="calendar" [size]="14" />
+        {{ lastSession.completedAt ? (lastSession.completedAt | date:'medium') : (lastSession.startedAt | date:'medium') }}
+      </p>
+      <blockquote class="recent-note" *ngIf="lastSession.notes">“{{ lastSession.notes }}”</blockquote>
+      <div class="recent-metrics">
+        <div class="stat">
+          <span class="stat-label">Score</span>
+          <span class="stat-value">
+            {{ lastSession.score != null ? (lastSession.score | number:'1.0-0') + '%' : '-' }}
+          </span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Feeling</span>
+          <span class="stat-value">{{ lastSession.moodScore || '-' }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Questions</span>
+          <span class="stat-value">{{ totalQuestions }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div
+    class="skeletons"
+    *ngIf="loading"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    aria-label="Loading examination questions"
+  >
+    <span class="sr-only">Loading examination questions and session status...</span>
+    <div class="skeleton-card card" *ngFor="let s of [1, 2, 3, 4, 5]" aria-hidden="true">
+      <div class="card-head">
+        <div class="skeleton-head-info">
+          <div class="skeleton skeleton-pill short"></div>
+          <div class="skeleton skeleton-line wide title-line"></div>
+          <div class="skeleton skeleton-line medium instruction-line"></div>
+        </div>
+        <div class="skeleton skeleton-chip"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session: progress rail + prayer-book prompts -->
+  <div class="session-layout" *ngIf="!loading">
+    <aside class="progress-rail" aria-label="Session progress">
+      <div class="rail-card card">
+        <div
+          class="progress-bar ring"
+          role="progressbar"
+          [attr.aria-valuenow]="answeredCount"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="totalQuestions"
+          [attr.aria-valuetext]="answeredCount + ' of ' + totalQuestions + ' questions answered (' + progressPercent + '%)'"
+        >
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" [attr.r]="ringRadius" />
+            <circle
+              class="ring-value"
+              cx="60"
+              cy="60"
+              [attr.r]="ringRadius"
+              [attr.stroke-dasharray]="ringCircumference"
+              [attr.stroke-dashoffset]="ringOffset"
+            />
+          </svg>
+          <div class="ring-label" aria-hidden="true">
+            <span class="ring-count">{{ answeredCount }}</span>
+            <span class="ring-of">of {{ totalQuestions }}</span>
+          </div>
+        </div>
+        <p class="rail-caption muted tiny" *ngIf="submitEnabled">All questions completed.</p>
+        <p class="rail-caption muted tiny" *ngIf="!submitEnabled">{{ progressPercent }}% of tonight's prayer</p>
+
+        <ol class="rail-steps">
+          <li *ngFor="let question of questions; let idx = index; trackBy: trackByQuestionId">
+            @let mv = movementOf(question.categoryName);
+            <button
+              type="button"
+              class="rail-step"
+              [ngClass]="mv.cls"
+              [class.done]="question.status === 'completed'"
+              [class.current]="expandedQuestionId === question.id"
+              [disabled]="!activeSession"
+              [attr.aria-current]="expandedQuestionId === question.id ? 'step' : null"
+              (click)="goToQuestion(question.id)"
+            >
+              <span class="step-dot" aria-hidden="true">
+                <app-icon [name]="question.status === 'completed' ? 'check' : mv.icon" [size]="13" />
+              </span>
+              <span class="step-num" aria-hidden="true">{{ numeral(idx) }}</span>
+              <span class="step-name">{{ question.categoryName || 'Reflection' }}</span>
+            </button>
+          </li>
+        </ol>
+
+        <div class="rail-foot">
+          <span class="muted tiny"><kbd>Alt</kbd>+<kbd>N</kbd> next prompt</span>
+          <span class="autosave" *ngIf="showAutosave"><app-icon name="check" [size]="12" /> Saved progress</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="session-main">
+      <div class="empty-state" *ngIf="!activeSession">
+        <app-icon name="candle" [size]="26" />
+        Start an examen session to unlock today's questions and track your answers.
+      </div>
+
+      <p class="divider-ornament">Tonight's prompts</p>
+
+      <section
+        class="question-grid"
+        [class.disabled]="!activeSession"
+        aria-label="Examination questions list"
+      >
+        <article
+          class="question-card card"
+          *ngFor="let question of questions; let idx = index; trackBy: trackByQuestionId"
+          [attr.id]="'question-' + question.id"
+          [ngClass]="movementOf(question.categoryName).cls"
+          [class.completed]="question.status === 'completed'"
+          [class.expanded]="expandedQuestionId === question.id"
+          (click)="expandQuestion(question.id)"
+          appMotion
+        >
+          @let mv = movementOf(question.categoryName);
+          <div class="card-head">
+            <span class="q-numeral" aria-hidden="true">{{ numeral(idx) }}</span>
+            <button
+              type="button"
+              class="card-toggle"
+              [id]="'question-toggle-' + question.id"
+              [attr.aria-expanded]="expandedQuestionId === question.id"
+              [attr.aria-controls]="'question-body-' + question.id"
+              (click)="$event.stopPropagation(); toggleQuestion(question.id)"
+              (keydown)="onQuestionHeaderKeydown($event, question.id, idx)"
+            >
+              <span class="toggle-copy">
+                <span class="overline q-category">
+                  <app-icon [name]="mv.icon" [size]="13" />
+                  {{ question.categoryName || 'Reflection' }}
+                </span>
+                <h3 [id]="'question-header-' + question.id">{{ question.text }}</h3>
+                <span class="muted tiny instruction" [id]="'q-instruction-' + question.id">{{ question.instruction }}</span>
+              </span>
+              <span class="toggle-indicator" aria-hidden="true">
+                <app-icon name="chevron-down" [size]="18" />
+              </span>
+            </button>
+
+            <div
+              class="status-chip"
+              [class.done]="question.status === 'completed'"
+              [attr.aria-label]="question.status === 'completed' ? 'Completed' : 'Incomplete'"
+            >
+              <app-icon *ngIf="question.status === 'completed'" name="check" [size]="12" />
+              <span class="dot" *ngIf="question.status !== 'completed'" aria-hidden="true"></span>
+              {{ question.status === 'completed' ? 'Completed' : 'Incomplete' }}
+            </div>
+          </div>
+
+          <div
+            class="question-body"
+            [class.open]="expandedQuestionId === question.id"
+            [id]="'question-body-' + question.id"
+            role="region"
+            [attr.aria-labelledby]="'question-header-' + question.id"
+          >
+            <div class="reflection-block">
+              <div class="block-header">
+                <label class="field-label" [for]="'question-textarea-' + question.id">
+                  <app-icon name="quill" [size]="14" /> Reflection
+                </label>
+                <span class="kbd-hint muted tiny" aria-hidden="true">Press <kbd>Ctrl+Enter</kbd> to save</span>
+              </div>
+              <textarea
+                rows="3"
+                class="journal"
+                [id]="'question-textarea-' + question.id"
+                [ngModel]="question.reflectionText"
+                (ngModelChange)="setReflection(question.id, $event)"
+                (keydown)="onTextareaKeydown($event, question)"
+                [disabled]="submitting"
+                [attr.aria-invalid]="!!question.validationMessage"
+                [attr.aria-describedby]="'q-instruction-' + question.id + (question.validationMessage ? ' q-err-' + question.id : '')"
+                placeholder="Write your reflection for this prompt"
+              ></textarea>
+            </div>
+
+            <div class="feeling-block">
+              <label class="field-label" [id]="'feeling-label-' + question.id">
+                <app-icon name="smile" [size]="14" /> Feeling rating
+              </label>
+              <div
+                class="mood-picker"
+                role="radiogroup"
+                [attr.aria-labelledby]="'feeling-label-' + question.id"
+              >
+                <button
+                  *ngFor="let m of feelingScale"
+                  type="button"
+                  [id]="'feeling-' + question.id + '-' + m"
+                  [class.selected]="question.feelingScore === m"
+                  [class.below]="question.feelingScore != null && m < question.feelingScore"
+                  [style.--lvl]="m"
+                  (click)="setFeelingScore(question.id, m)"
+                  (keydown)="onFeelingKeydown($event, question.id, question.feelingScore)"
+                  [disabled]="submitting"
+                  [attr.aria-checked]="question.feelingScore === m"
+                  [attr.aria-label]="m + ' - ' + feelingLabel(m)"
+                  [attr.tabindex]="isRatingFocused(question.feelingScore, m) ? 0 : -1"
+                  role="radio"
+                >
+                  {{ m }}
+                </button>
+              </div>
+              <p class="feeling-caption muted tiny" [class.chosen]="question.feelingScore">
+                {{ question.feelingScore ? feelingLabel(question.feelingScore) : 'Rate how you felt while answering this prompt (Use arrow keys to adjust).' }}
+              </p>
+            </div>
+
+            <div class="question-actions">
+              <button
+                class="btn btn-primary"
+                type="button"
+                (click)="submitQuestion(question)"
+                [disabled]="!activeSession || submitting"
+              >
+                <app-icon name="check" [size]="16" />
+                {{ question.status === 'completed' ? 'Update response' : 'Submit response' }}
+              </button>
+              <button
+                class="btn btn-text btn-sm"
+                type="button"
+                (click)="collapseQuestion(question.id, true)"
+                title="Collapse prompt (Escape)"
+              >
+                Collapse
+              </button>
+              <span class="tag tag-success" *ngIf="question.status === 'completed'">
+                <app-icon name="check" [size]="12" /> Saved
+              </span>
+            </div>
+
+            <p
+              class="validation-message"
+              *ngIf="question.validationMessage"
+              [id]="'q-err-' + question.id"
+              role="alert"
+            >
+              <app-icon name="info" [size]="14" />
+              {{ question.validationMessage }}
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <section class="session-panel card" *ngIf="activeSession" appMotion>
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-glyph"><app-icon name="book" [size]="18" /></span>
+            <div>
+              <h3>Closing prayer</h3>
+              <p class="muted tiny">Gather the evening into a few words before you offer it.</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel-grid">
+          <div class="panel-block">
+            <label class="field-label" for="session-note">Session note (optional)</label>
+            <textarea
+              id="session-note"
+              rows="4"
+              class="journal"
+              [ngModel]="notes"
+              (ngModelChange)="onNotesChange($event)"
+              [disabled]="submitting"
+              placeholder="Write a short summary for today"></textarea>
+          </div>
+          <div class="panel-block">
+            <label class="field-label" id="session-feeling-label">Overall feeling (optional)</label>
+            <div
+              class="mood-picker"
+              role="radiogroup"
+              aria-labelledby="session-feeling-label"
+            >
+              <button
+                *ngFor="let m of moodScale"
+                type="button"
+                [id]="'mood-' + m"
+                [class.selected]="moodScore === m"
+                [class.below]="moodScore != null && m < moodScore"
+                [style.--lvl]="m"
+                (click)="setMoodScore(m)"
+                (keydown)="onMoodKeydown($event)"
+                [disabled]="submitting"
+                [attr.aria-checked]="moodScore === m"
+                [attr.aria-label]="m + ' - ' + feelingLabel(m)"
+                [attr.tabindex]="isRatingFocused(moodScore ?? undefined, m) ? 0 : -1"
+                role="radio"
+              >
+                {{ m }}
+              </button>
+            </div>
+            <p class="feeling-caption muted tiny" [class.chosen]="moodScore">
+              {{ moodScore ? feelingLabel(moodScore) : 'Optional. If empty, we use the average feeling rating.' }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="finish-card card" *ngIf="activeSession" [class.ready]="submitEnabled">
+        <span class="finish-glyph" aria-hidden="true">
+          <app-icon [name]="submitEnabled ? 'sparkle' : 'hourglass'" [size]="22" />
+        </span>
+        <div class="finish-copy">
+          <h3>{{ submitting ? 'Offering your examen…' : submitEnabled ? 'Your examen is ready to offer' : 'Continue your prayer' }}</h3>
+          <p class="muted small">
+            {{ submitEnabled ? 'Submitting locks tonight’s record and updates your streak.' : (totalQuestions - answeredCount) + ' prompt(s) remain before you can submit.' }}
+          </p>
+        </div>
+        <button class="btn btn-primary btn-lg" type="button" (click)="submit()" [disabled]="!submitEnabled || submitting">
+          <app-icon name="send" [size]="16" />
+          Submit examen
+        </button>
+      </section>
+    </div>
+  </div>
+</div>

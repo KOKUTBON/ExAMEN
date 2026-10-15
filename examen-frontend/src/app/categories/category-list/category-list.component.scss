@@ -1,0 +1,82 @@
+.table-card > .card-header {
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+}
+
+.table-title {
+  font-size: 20px;
+}
+
+.hint {
+  margin: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.col-actions {
+  width: 1%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cat-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.row-glyph {
+  --glyph: var(--m);
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  transition: transform 0.35s var(--ease-spring);
+}
+
+.name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cat-row td {
+  transition: background 0.2s ease;
+}
+
+.cat-row:hover .row-glyph {
+  transform: rotate(-6deg) scale(1.06);
+}
+
+.col-desc {
+  max-width: 460px;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .col-desc {
+    display: none;
+  }
+
+  .row-actions {
+    gap: 6px;
+  }
+
+  .hint {
+    display: none;
+  }
+}

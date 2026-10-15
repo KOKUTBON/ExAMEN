@@ -1,0 +1,195 @@
+<div class="section-stack dashboard">
+  <div class="loading-state" *ngIf="loading">Loading your dashboard...</div>
+
+  <section class="dash-hero card card-night" *ngIf="!loading" appMotion>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">Today · {{ greeting }}</p>
+      <h1>Examination of Conscience</h1>
+      <p class="hero-lede">
+        Pause, remember the <em class="accent">graces</em> of this day, and walk through it again
+        in the gentle light of prayer.
+      </p>
+
+      <div class="hero-status">
+        <span class="status-pill" [attr.data-tone]="statusTone">
+          <span class="status-dot" aria-hidden="true"></span>{{ todayStatus }}
+        </span>
+        <span class="hero-feeling">
+          <app-icon name="smile" [size]="16" />
+          Feeling {{ feelingDisplay }}
+        </span>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" routerLink="/examination">
+          <app-icon name="flame" [size]="18" />
+          {{ activeSession ? 'Continue examen' : "Start today's examen" }}
+        </a>
+        <a class="btn btn-ghost hero-ghost" routerLink="/questions">
+          <app-icon name="quill" [size]="16" />
+          Manage questions
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-side">
+      <div class="ring" role="img"
+           [attr.aria-label]="'Spiritual progress ' + (summary?.spiritualProgressScore != null ? progressValue + '%' : 'not yet measured')">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="dashRingGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f6d488" />
+              <stop offset="100%" stop-color="#e07a4a" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="60" cy="60" r="52" />
+          <circle class="ring-bar" cx="60" cy="60" r="52"
+                  [attr.stroke-dasharray]="ringCircumference"
+                  [attr.stroke-dashoffset]="ringOffset" />
+        </svg>
+        <div class="ring-center">
+          <span class="ring-value num">
+            {{ summary?.spiritualProgressScore != null ? (summary?.spiritualProgressScore | number:'1.0-0') + '%' : '-' }}
+          </span>
+          <span class="ring-label">Spiritual progress</span>
+        </div>
+      </div>
+
+      <div class="streak" [class.lit]="(summary?.streakDays || 0) > 0">
+        <span class="streak-flame" aria-hidden="true">
+          <app-icon name="flame" [size]="22" />
+        </span>
+        <div>
+          <div class="streak-value num">{{ summary?.streakDays || 0 }} days</div>
+          <div class="streak-label">Streak</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card path-card" *ngIf="!loading" appMotion>
+    <div class="card-header">
+      <div class="card-title">
+        <span class="card-glyph"><app-icon name="compass" [size]="20" /></span>
+        <div>
+          <p class="overline">Tonight's path</p>
+          <h2>The five movements</h2>
+        </div>
+      </div>
+      <span class="pill">{{ summary?.sessionsThisWeek || 0 }} this week</span>
+    </div>
+    <ol class="path list-reset">
+      <li class="path-step" *ngFor="let m of movements; let i = index" [ngClass]="'m-' + m.key">
+        <span class="path-icon"><app-icon [name]="m.icon" [size]="20" /></span>
+        <span class="path-num num">{{ i + 1 }}</span>
+        <strong class="path-name">{{ m.name }}</strong>
+        <span class="path-hint">{{ m.hint }}</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="kpi-grid" *ngIf="!loading">
+    <div class="card kpi card-interactive" appMotion style="--glyph: var(--m-review)">
+      <span class="card-glyph"><app-icon name="flame" [size]="20" /></span>
+      <div class="stat">
+        <span class="stat-label">Examinations</span>
+        <span class="stat-value">{{ summary?.examinationsCompleted || 0 }}</span>
+      </div>
+      <p class="muted tiny">Completed sessions, all time.</p>
+    </div>
+    <div class="card kpi card-interactive" appMotion style="--glyph: var(--m-resolve)">
+      <span class="card-glyph"><app-icon name="check-circle" [size]="20" /></span>
+      <div class="stat">
+        <span class="stat-label">Todos</span>
+        <span class="stat-value">{{ summary?.todosCompleted || 0 }}</span>
+      </div>
+      <p class="muted tiny">Tasks completed, all time.</p>
+    </div>
+    <div class="card kpi card-interactive" appMotion style="--glyph: var(--m-request)">
+      <span class="card-glyph"><app-icon name="layers" [size]="20" /></span>
+      <div class="stat">
+        <span class="stat-label">Categories</span>
+        <span class="stat-value">{{ summary?.categoriesUsed || 0 }}</span>
+      </div>
+      <p class="muted tiny">Categories you have answered.</p>
+    </div>
+    <div class="card kpi card-interactive" appMotion style="--glyph: var(--m-relish)">
+      <span class="card-glyph"><app-icon name="calendar" [size]="20" /></span>
+      <div class="stat">
+        <span class="stat-label">Sessions this week</span>
+        <span class="stat-value">{{ summary?.sessionsThisWeek || 0 }}</span>
+      </div>
+      <p class="muted tiny">Evenings kept in the last seven days.</p>
+    </div>
+  </section>
+
+  <section class="dash-split" *ngIf="!loading">
+    <div class="card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph" style="--glyph: var(--m-resolve)"><app-icon name="checklist" [size]="20" /></span>
+          <div>
+            <p class="overline">Todos</p>
+            <h2>Upcoming focus</h2>
+          </div>
+        </div>
+        <a class="btn btn-ghost btn-sm" routerLink="/todos">
+          Open todos <app-icon name="arrow-right" [size]="14" />
+        </a>
+      </div>
+      <p class="overdue-note tiny" [class.has-overdue]="overdueCount > 0">
+        <app-icon name="clock" [size]="14" /> {{ overdueCount }} overdue
+      </p>
+      <ul class="todo-list list-reset" *ngIf="upcomingTodos.length">
+        <li class="todo-row" *ngFor="let todo of upcomingTodos" [class.overdue]="isTodoOverdue(todo)">
+          <span class="todo-bullet" aria-hidden="true"></span>
+          <div class="todo-main">
+            <div class="todo-title">{{ todo.title }}</div>
+            <div class="muted tiny num">{{ todo.dueAt | date:'medium' }}</div>
+          </div>
+          <span class="tag" [ngClass]="isTodoOverdue(todo) ? 'tag-danger' : 'tag-muted'">{{ isTodoOverdue(todo) ? 'Overdue' : 'Pending' }}</span>
+        </li>
+      </ul>
+      <div class="empty-state" *ngIf="!upcomingTodos.length">
+        <app-icon name="sprout" [size]="26" />
+        <strong>A clear horizon</strong>
+        No pending todos. Add a task to stay intentional.
+      </div>
+    </div>
+
+    <div class="card" appMotion>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-glyph"><app-icon name="book" [size]="20" /></span>
+          <div>
+            <p class="overline">Library</p>
+            <h2>Questions and categories</h2>
+          </div>
+        </div>
+        <a class="btn btn-ghost btn-sm" routerLink="/questions">Manage library</a>
+      </div>
+      <p class="muted tiny">Default prompts plus your custom library.</p>
+      <div class="library-counts">
+        <div class="count-tile">
+          <app-icon name="sparkle" [size]="18" />
+          <strong class="num">{{ defaultQuestionCount }}</strong>
+          <span>Default prompts</span>
+        </div>
+        <div class="count-tile">
+          <app-icon name="quill" [size]="18" />
+          <strong class="num">{{ customQuestionCount }}</strong>
+          <span>Custom questions</span>
+        </div>
+        <div class="count-tile">
+          <app-icon name="layers" [size]="18" />
+          <strong class="num">{{ categoryCount }}</strong>
+          <span>Categories</span>
+        </div>
+      </div>
+      <a class="btn btn-soft" routerLink="/questions">
+        <app-icon name="plus" [size]="16" /> Add a question
+      </a>
+    </div>
+  </section>
+</div>
